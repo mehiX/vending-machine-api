@@ -2,29 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"time"
 )
 
 var addr string
-
-type app struct {
-	Addr   string
-	Router http.Handler
-	Db     *sql.DB
-}
-
-func (a *app) HttpServer() http.Server {
-	return http.Server{
-		Addr:    a.Addr,
-		Handler: a.Router,
-	}
-}
 
 func init() {
 	flag.StringVar(&addr, "l", "localhost:7777", "Listen address for the server")
@@ -34,12 +19,7 @@ func main() {
 
 	flag.Parse()
 
-	vm := &app{
-		Addr:   addr,
-		Router: router(),
-	}
-
-	srvr := vm.HttpServer()
+	srvr := NewApp(addr, nil).HttpServer()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
