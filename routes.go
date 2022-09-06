@@ -34,7 +34,7 @@ func (a *app) SetupRoutes() {
 	// public routes
 	a.Router.Group(func(r chi.Router) {
 		r.Get("/health", a.handleHealth)
-		r.Post("/login", a.handleLogin)
+		r.Post("/login", a.handleLogin())
 	})
 
 }
@@ -47,21 +47,24 @@ func (a *app) handleValidate(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
+func (a *app) handleLogin() http.HandlerFunc {
 
 	type req struct {
 		Username string
 		Password string
 	}
 
-	var body req
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		var body req
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		_, tokenString, _ := tokenAuth.Encode(map[string]interface{}{"user": body.Username})
+
+		w.Write([]byte(tokenString))
+
 	}
-
-	_, tokenString, _ := tokenAuth.Encode(map[string]interface{}{"user": body.Username})
-
-	w.Write([]byte(tokenString))
-
 }
