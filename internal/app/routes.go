@@ -10,7 +10,7 @@ import (
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
 
-	_ "github.com/mehix/vending-machine-api/docs"
+	_ "github.com/mehiX/vending-machine-api/docs"
 	swg "github.com/swaggo/http-swagger"
 )
 

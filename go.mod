@@ -1,4 +1,4 @@
-module github.com/mehix/vending-machine-api
+module github.com/mehiX/vending-machine-api
 
 go 1.19
 
