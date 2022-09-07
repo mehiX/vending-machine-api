@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -111,7 +112,12 @@ func TestLoginWrongRequestBody(t *testing.T) {
 }
 
 func TestLoginSuccess(t *testing.T) {
-	router := NewApp("", nil).Router
+
+	os.Setenv("JWT_ALG", "HS256")
+	os.Setenv("JWT_SIGNKEY", "somekey")
+
+	vm := NewApp("", nil)
+	router := vm.Router
 
 	type reqBody struct {
 		Username string
@@ -139,16 +145,19 @@ func TestLoginSuccess(t *testing.T) {
 
 	tknString, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	tkn, err := tokenAuth.Decode(string(tknString))
+	tkn, err := vm.JwtAuth.Decode(string(tknString))
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	claims := tkn.PrivateClaims()
 	if usr, ok := claims["user"]; !ok || usr != "mihai" {
 		t.Error("Wrong or missing claim 'user'")
+	}
+	if role, ok := claims["role"]; !ok || TypeRole(int(role.(float64))) != ROLE_USER {
+		t.Errorf("Wrong or missing claim 'role'. Expected: %d, got: %d", ROLE_USER, role)
 	}
 }

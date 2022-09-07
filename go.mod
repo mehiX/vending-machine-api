@@ -6,6 +6,8 @@ require (
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/jwtauth/v5 v5.0.2
 	github.com/google/uuid v1.3.0
+	github.com/joho/godotenv v1.4.0
+	github.com/lestrrat-go/jwx v1.2.6
 	github.com/swaggo/http-swagger v1.3.3
 	github.com/swaggo/swag v1.8.3
 )
@@ -23,7 +25,6 @@ require (
 	github.com/lestrrat-go/blackmagic v1.0.0 // indirect
 	github.com/lestrrat-go/httpcc v1.0.0 // indirect
 	github.com/lestrrat-go/iter v1.0.1 // indirect
-	github.com/lestrrat-go/jwx v1.2.6 // indirect
 	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

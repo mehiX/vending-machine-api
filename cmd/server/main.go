@@ -8,13 +8,22 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/mehiX/vending-machine-api/internal/app"
 )
 
 var addr string
+var envFile string
 
 func init() {
 	flag.StringVar(&addr, "l", "localhost:7777", "Listen address for the server")
+	flag.StringVar(&envFile, "e", ".env", "File with environment variables")
+
+	flag.Parse()
+
+	if err := godotenv.Load(envFile); err != nil {
+		fmt.Printf("ENV not loaded from '%s'. Error: %s\n", envFile, err.Error())
+	}
 }
 
 // @title 			Vending Machine API
@@ -31,8 +40,6 @@ func init() {
 // @BasePath		/
 // @schemes			http
 func main() {
-
-	flag.Parse()
 
 	srvr := app.NewApp(addr, nil).HttpServer()
 

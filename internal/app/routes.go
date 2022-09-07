@@ -1,20 +1,20 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
-	"github.com/google/uuid"
+	"github.com/lestrrat-go/jwx/jwt"
 
 	_ "github.com/mehiX/vending-machine-api/docs"
 	swg "github.com/swaggo/http-swagger"
 )
-
-var tokenAuth = jwtauth.New("HS256", []byte(uuid.New().String()), nil)
 
 func (a *app) SetupRoutes() {
 
@@ -29,7 +29,7 @@ func (a *app) SetupRoutes() {
 
 	//protected routes
 	a.Router.Group(func(r chi.Router) {
-		r.Use(jwtauth.Verifier(tokenAuth))
+		r.Use(jwtauth.Verifier(a.JwtAuth))
 		r.Use(jwtauth.Authenticator)
 		r.Get("/validate", a.handleValidate)
 	})
@@ -71,7 +71,20 @@ func (a *app) handleLogin() http.HandlerFunc {
 			return
 		}
 
-		_, tokenString, _ := tokenAuth.Encode(map[string]interface{}{"user": body.Username})
+		t := jwt.New()
+		t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
+		t.Set(jwt.NotBeforeKey, time.Now())
+		t.Set("user", body.Username)
+		t.Set("role", ROLE_USER)
+
+		claims, _ := t.AsMap(context.Background())
+
+		_, tokenString, err := a.JwtAuth.Encode(claims)
+		if err != nil {
+			fmt.Printf("Error signing token: %s\n", err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		w.Write([]byte(tokenString))
 

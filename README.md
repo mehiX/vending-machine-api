@@ -4,10 +4,22 @@
 
 - Go >= 1.19
 
-## Build docker image
+## Setup
 
 ```
-VERSION=1.2 && docker build -t vending-machine:${VERSION} --build-arg VERSION=${VERSION} .
+cp .env.tmpl .env
+```
+
+Edit the values in `.env` to match your environment.
+
+## Build and run with Docker
+
+```
+export VERSION=1.3 
+
+docker build -t vending-machine:${VERSION} --build-arg VERSION=${VERSION} .
+
+docker run --rm -d --env-file .env -p 7777:80 vending-machine:${VERSION}
 ```
 
 ## Generate code coverage report
