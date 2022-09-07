@@ -4,7 +4,6 @@ jobs:
   test:
     env:
       GOPATH: ${{ github.workspace }}
-      GO111MODULE: off
 
     defaults:
       run:
@@ -30,5 +29,5 @@ jobs:
       run: |
         go install github.com/swaggo/swag/cmd/swag@v1.8.3
         swag init -d "./cmd/server" --parseDependency --parseDepth 1
-        go get -d -v ./...
+        go get -d -t -v ./...
         go test -v ./internal/...
