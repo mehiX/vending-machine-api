@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	app "github.com/mehix/vending-machine-api/internal"
 )
 
 var addr string
@@ -15,11 +17,24 @@ func init() {
 	flag.StringVar(&addr, "l", "localhost:7777", "Listen address for the server")
 }
 
+// @title 			Vending Machine API
+// @description		API for a vending machine, allowing users with a “seller” role to add, update or remove products, while users with a “buyer” role can deposit coins into the machine and make purchases
+// @version 		1.0
+
+// @contact.name	Mihai O.
+// @contact.email	mihai@devops-experts.me
+
+// @securitydefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
+// @BasePath		/
+// @schemes			http
 func main() {
 
 	flag.Parse()
 
-	srvr := NewApp(addr, nil).HttpServer()
+	srvr := app.NewApp(addr, nil).HttpServer()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

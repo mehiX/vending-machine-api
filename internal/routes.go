@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"encoding/json"
@@ -9,6 +9,9 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
+
+	_ "github.com/mehix/vending-machine-api/docs"
+	swg "github.com/swaggo/http-swagger"
 )
 
 var tokenAuth = jwtauth.New("HS256", []byte(uuid.New().String()), nil)
@@ -37,8 +40,14 @@ func (a *app) SetupRoutes() {
 		r.Post("/login", a.handleLogin())
 	})
 
+	a.Router.Mount("/swagger", swg.WrapHandler)
 }
 
+// @Summary 	Health endpoing
+// @Description Validate the application is running
+// @Produces	text/plain
+// @Success		200 {string} string "OK"
+// @Router 		/health [get]
 func (a *app) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }

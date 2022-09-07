@@ -1,0 +1,20 @@
+info:
+  contact: {}
+  title: Vending Machine API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Validate the application is running
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health endpoing
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
