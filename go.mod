@@ -7,7 +7,7 @@ require (
 	github.com/go-chi/jwtauth/v5 v5.0.2
 	github.com/google/uuid v1.3.0
 	github.com/swaggo/http-swagger v1.3.3
-	github.com/swaggo/swag v1.8.5
+	github.com/swaggo/swag v1.8.3
 )
 
 require (
