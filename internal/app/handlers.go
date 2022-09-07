@@ -46,7 +46,7 @@ func (a *app) handleAddUser() http.HandlerFunc {
 		Username string
 		Password string
 		Deposit  int64
-		Role     int
+		Role     model.TypeRole
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +57,7 @@ func (a *app) handleAddUser() http.HandlerFunc {
 			return
 		}
 
-		if err := a.CreateUser(data.Username, data.Password, data.Deposit, model.TypeRole(data.Role)); err != nil {
+		if err := a.CreateUser(data.Username, data.Password, data.Deposit, data.Role); err != nil {
 			fmt.Println("createUser error", err)
 			http.Error(w, "user not created", http.StatusInternalServerError)
 			return
@@ -82,15 +82,8 @@ func (a *app) handleLogin() http.HandlerFunc {
 			return
 		}
 
-		t := jwt.New()
-		t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
-		t.Set(jwt.NotBeforeKey, time.Now())
-		t.Set("user", body.Username)
-		t.Set("role", model.ROLE_USER)
-
-		claims, _ := t.AsMap(context.Background())
-
-		_, tokenString, err := a.JwtAuth.Encode(claims)
+		// TODO fetch use from database and do a proper login
+		tokenString, err := a.getEncTokenString(body.Username, model.ROLE_USER)
 		if err != nil {
 			fmt.Printf("Error signing token: %s\n", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -100,4 +93,19 @@ func (a *app) handleLogin() http.HandlerFunc {
 		w.Write([]byte(tokenString))
 
 	}
+}
+
+func (a *app) getEncTokenString(username string, role model.TypeRole) (string, error) {
+	t := jwt.New()
+	t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
+	t.Set(jwt.NotBeforeKey, time.Now())
+	t.Set("user", username)
+	t.Set("role", role)
+
+	claims, _ := t.AsMap(context.Background())
+
+	_, tokenString, err := a.JwtAuth.Encode(claims)
+
+	return tokenString, err
+
 }

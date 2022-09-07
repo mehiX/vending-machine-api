@@ -1,5 +1,7 @@
 # Vending Machine API
 
+[![Go Report Card](https://goreportcard.com/report/github.com/mehiX/vending-machine-api)](https://goreportcard.com/report/github.com/mehiX/vending-machine-api)
+
 ## Requirements
 
 - Go >= 1.19
