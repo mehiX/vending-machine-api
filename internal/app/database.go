@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/mehiX/vending-machine-api/internal/app/model"
 )
 
 // dbCreateUser receives sanitized data and tries to create a new database record
@@ -29,4 +30,22 @@ func (a *app) dbCreateUser(ctx context.Context, username, encPasswd string, depo
 
 	return
 
+}
+
+func (a *app) dbFindOneByUsername(ctx context.Context, username string) (*model.User, error) {
+
+	conn, err := a.Db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	var usr model.User
+
+	row := conn.QueryRowContext(ctx, `select id, username, password, deposit, role from users where username=?`, username)
+	if err := row.Scan(&usr.ID, &usr.Username, &usr.Password, &usr.Deposit, &usr.Role); err != nil {
+		return nil, err
+	}
+
+	return &usr, nil
 }

@@ -83,7 +83,7 @@ func (a *app) handleLogin() http.HandlerFunc {
 		}
 
 		// TODO fetch use from database and do a proper login
-		tokenString, err := a.getEncTokenString(body.Username, model.ROLE_USER)
+		tokenString, err := a.getEncTokenString(body.Username, model.ROLE_BUYER)
 		if err != nil {
 			fmt.Printf("Error signing token: %s\n", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)

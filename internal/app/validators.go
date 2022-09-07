@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/mehiX/vending-machine-api/internal/app/model"
 )
 
 func validateUsername(u string) error {
@@ -57,5 +59,9 @@ func validateDeposit(d int64) error {
 }
 
 func validateRole(r string) error {
-	return errors.New("not implemented")
+	if r != model.ROLE_ADMIN && r != model.ROLE_SELLER && r != model.ROLE_BUYER {
+		return fmt.Errorf("unrecognized role: %s", r)
+	}
+
+	return nil
 }

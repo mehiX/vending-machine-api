@@ -79,3 +79,20 @@ func TestDepositValidate(t *testing.T) {
 		}
 	}
 }
+
+func TestRoleValidate(t *testing.T) {
+	good := []string{"ADMIN", "BUYER", "SELLER"}
+	bad := []string{"admin", "root", "", "123"}
+
+	for _, r := range good {
+		if err := validateRole(r); err != nil {
+			t.Errorf("unexpected validation error for role: %s", r)
+		}
+	}
+
+	for _, r := range bad {
+		if err := validateRole(r); err == nil {
+			t.Errorf("role should be rejected: %s", r)
+		}
+	}
+}

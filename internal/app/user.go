@@ -39,3 +39,19 @@ func (a *app) CreateUser(ctx context.Context, username, password string, deposit
 
 	return a.dbCreateUser(ctx, username, string(encPasswd), deposit, role)
 }
+
+func (a *app) FindByCredentials(ctx context.Context, username, password string) (*model.User, error) {
+
+	usr, err := a.dbFindOneByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(usr.Password), []byte(password)); err != nil {
+		return nil, errors.New("credentials don't match")
+	}
+
+	usr.Password = ""
+
+	return usr, nil
+}

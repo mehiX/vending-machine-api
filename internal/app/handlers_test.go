@@ -27,7 +27,7 @@ func TestGetUserData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tknStr, err := vm.getEncTokenString("mihai", model.ROLE_USER)
+	tknStr, err := vm.getEncTokenString("mihai", model.ROLE_BUYER)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestGetUserData(t *testing.T) {
 		t.Errorf("GET /user wrong username in response. Expected: mihai, got: %s", respData.Username)
 	}
 
-	if respData.Role != model.ROLE_USER {
-		t.Errorf("GET /user wrong role in response. Expected: %s, got: %s", model.ROLE_USER, respData.Role)
+	if respData.Role != model.ROLE_BUYER {
+		t.Errorf("GET /user wrong role in response. Expected: %s, got: %s", model.ROLE_BUYER, respData.Role)
 	}
 }

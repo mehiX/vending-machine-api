@@ -26,7 +26,7 @@ type User struct {
 type TypeRole = string
 
 const (
-	ROLE_ADMIN  TypeRole = "admin"
-	ROLE_USER   TypeRole = "user"
-	ROLE_SELLER TypeRole = "seller"
+	ROLE_ADMIN  TypeRole = "ADMIN"
+	ROLE_BUYER  TypeRole = "BUYER"
+	ROLE_SELLER TypeRole = "SELLER"
 )
