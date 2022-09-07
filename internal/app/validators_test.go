@@ -1,11 +1,7 @@
 package app
 
 import (
-	"context"
 	"testing"
-
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/mehiX/vending-machine-api/internal/app/model"
 )
 
 func TestUsernameValidate(t *testing.T) {
@@ -67,24 +63,19 @@ func TestPasswordValidate(t *testing.T) {
 	}
 }
 
-func TestCreateUserShouldSucceed(t *testing.T) {
+func TestDepositValidate(t *testing.T) {
+	good := []int64{0, 5, 10, 15, 20, 25, 30, 35, 50, 100, 105, 150, 2005}
+	bad := []int64{1, 2, 3, 4, 6, 7, 18, 23, 22, 2501}
 
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
-	mock.ExpectBegin()
-	mock.ExpectExec(`insert into users \(id, username, password, deposit, role\) values`).WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectCommit()
-
-	vm := NewApp("", db)
-	if err := vm.CreateUser(context.Background(), "mihaiuser", "strong23Pass*", 100, model.ROLE_USER); err != nil {
-		t.Fatal(err)
+	for _, d := range good {
+		if err := validateDeposit(d); err != nil {
+			t.Errorf("unexpected error for deposit: %d. Error: %s", d, err)
+		}
 	}
 
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there are unfulfilled expectations: %s", err)
+	for _, d := range bad {
+		if err := validateDeposit(d); err == nil {
+			t.Errorf("deposit should be rejected: %d", d)
+		}
 	}
 }

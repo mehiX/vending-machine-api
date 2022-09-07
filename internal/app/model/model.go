@@ -23,10 +23,10 @@ type User struct {
 	Role     TypeRole
 }
 
-type TypeRole = int
+type TypeRole = string
 
 const (
-	ROLE_ADMIN TypeRole = iota
-	ROLE_USER
-	ROLE_SELLER
+	ROLE_ADMIN  TypeRole = "admin"
+	ROLE_USER   TypeRole = "user"
+	ROLE_SELLER TypeRole = "seller"
 )

@@ -19,7 +19,7 @@ func TestGetUserData(t *testing.T) {
 
 	type response struct {
 		Username string
-		Role     int
+		Role     string
 	}
 
 	r, err := http.NewRequest(http.MethodGet, "/user", nil)
@@ -55,6 +55,6 @@ func TestGetUserData(t *testing.T) {
 	}
 
 	if respData.Role != model.ROLE_USER {
-		t.Errorf("GET /user wrong role in response. Expected: %d, got: %d", model.ROLE_USER, respData.Role)
+		t.Errorf("GET /user wrong role in response. Expected: %s, got: %s", model.ROLE_USER, respData.Role)
 	}
 }

@@ -15,7 +15,7 @@ import (
 func (a *app) handleShowCurrentUser() http.HandlerFunc {
 	type response struct {
 		Username string
-		Role     int
+		Role     string
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,7 @@ func (a *app) handleShowCurrentUser() http.HandlerFunc {
 
 		resp := response{
 			Username: claims["user"].(string),
-			Role:     int(claims["role"].(float64)),
+			Role:     claims["role"].(string),
 		}
 
 		w.Header().Set("Content-type", "application/json")

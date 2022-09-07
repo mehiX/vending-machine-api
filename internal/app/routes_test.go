@@ -159,7 +159,7 @@ func TestLoginSuccess(t *testing.T) {
 	if usr, ok := claims["user"]; !ok || usr != "mihai" {
 		t.Error("Wrong or missing claim 'user'")
 	}
-	if role, ok := claims["role"]; !ok || model.TypeRole(int(role.(float64))) != model.ROLE_USER {
-		t.Errorf("Wrong or missing claim 'role'. Expected: %d, got: %d", model.ROLE_USER, role)
+	if role, ok := claims["role"]; !ok || role != model.ROLE_USER {
+		t.Errorf("Wrong or missing claim 'role'. Expected: %s, got: %s", model.ROLE_USER, role)
 	}
 }
