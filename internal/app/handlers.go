@@ -57,7 +57,7 @@ func (a *app) handleAddUser() http.HandlerFunc {
 			return
 		}
 
-		if err := a.CreateUser(data.Username, data.Password, data.Deposit, data.Role); err != nil {
+		if err := a.CreateUser(r.Context(), data.Username, data.Password, data.Deposit, data.Role); err != nil {
 			fmt.Println("createUser error", err)
 			http.Error(w, "user not created", http.StatusInternalServerError)
 			return
