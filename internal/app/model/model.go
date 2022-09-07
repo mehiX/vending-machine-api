@@ -1,4 +1,4 @@
-package app
+package model
 
 import "errors"
 
@@ -23,7 +23,7 @@ type User struct {
 	Role     TypeRole
 }
 
-type TypeRole int
+type TypeRole = int
 
 const (
 	ROLE_ADMIN TypeRole = iota

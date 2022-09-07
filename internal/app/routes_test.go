@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/mehiX/vending-machine-api/internal/app/model"
 )
 
 func TestHealth(t *testing.T) {
@@ -40,7 +42,7 @@ func TestHealth(t *testing.T) {
 
 func TestValidateExists(t *testing.T) {
 
-	r, err := http.NewRequest(http.MethodGet, "/validate", nil)
+	r, err := http.NewRequest(http.MethodGet, "/user", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +53,7 @@ func TestValidateExists(t *testing.T) {
 	resp := w.Result()
 
 	if resp.StatusCode == http.StatusNotFound {
-		t.Error("GET /validate should be defined")
+		t.Error("GET /user should be defined")
 	}
 }
 
@@ -64,7 +66,7 @@ func TestProtectedRoutes(t *testing.T) {
 	routes := []route{
 		{
 			method: http.MethodGet,
-			path:   "/validate",
+			path:   "/user",
 		},
 	}
 
@@ -157,7 +159,7 @@ func TestLoginSuccess(t *testing.T) {
 	if usr, ok := claims["user"]; !ok || usr != "mihai" {
 		t.Error("Wrong or missing claim 'user'")
 	}
-	if role, ok := claims["role"]; !ok || TypeRole(int(role.(float64))) != ROLE_USER {
-		t.Errorf("Wrong or missing claim 'role'. Expected: %d, got: %d", ROLE_USER, role)
+	if role, ok := claims["role"]; !ok || model.TypeRole(int(role.(float64))) != model.ROLE_USER {
+		t.Errorf("Wrong or missing claim 'role'. Expected: %d, got: %d", model.ROLE_USER, role)
 	}
 }
