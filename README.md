@@ -14,10 +14,23 @@ cp .env.tmpl .env
 
 Edit the values in `.env` to match your environment.
 
+## Run 
+
+```
+# check available command line options (provided defaults should work)
+go run ./cmd/server/... -h
+
+# run with defaults
+go run ./cmd/server/...
+
+# run on different port
+go run ./cmd/server/... -l 127.0.0.1:9999
+```
+
 ## Build and run with Docker
 
 ```
-export VERSION=1.3 
+export VERSION=1.4 
 
 docker build -t vending-machine:${VERSION} --build-arg VERSION=${VERSION} .
 

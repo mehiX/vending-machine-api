@@ -23,7 +23,10 @@ RUN addgroup -S app && adduser -S app -G app
 COPY --from=builder --chown=app /go/bin/app /app
 COPY --from=builder --chown=app /go/bin/healthcheck /healthcheck
 USER app
-ENTRYPOINT /app -l :80
+
+ENTRYPOINT ["/app"] 
+CMD ["-l", ":80"]
+
 LABEL Name=VendinMachineAPI Version=${VERSION}
 
 EXPOSE 80
