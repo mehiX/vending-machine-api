@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/mehix/vending-machine-api/internal/app"
+	"github.com/mehix/vending-machine-api/pkg/app"
 )
 
 var addr string
