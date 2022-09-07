@@ -21,7 +21,7 @@ func NewApp(addr string, db *sql.DB) *app {
 
 	a := &app{
 		Addr:    addr,
-		Db:      nil,
+		Db:      db,
 		JwtAuth: jwtauth.New(os.Getenv("JWT_ALG"), []byte(os.Getenv("JWT_SIGNKEY")), nil),
 	}
 

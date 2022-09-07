@@ -14,17 +14,17 @@ import (
 
 const password_min_length = 8
 
-func (a *app) CreateUser(ctx context.Context, username, password string, deposit int64, role model.TypeRole) error {
+func (a *app) CreateUser(ctx context.Context, username, password string, deposit int64, role model.TypeRole) (err error) {
 
-	if err := validateUsername(username); err != nil {
-		return err
+	if err = validateUsername(username); err != nil {
+		return
 	}
 
-	if err := validatePassword(password); err != nil {
-		return err
+	if err = validatePassword(password); err != nil {
+		return
 	}
 
-	encPasswd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MaxCost)
+	encPasswd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if err != nil {
 		return err
 	}
@@ -33,19 +33,26 @@ func (a *app) CreateUser(ctx context.Context, username, password string, deposit
 		return errors.New("no database configured")
 	}
 
-	t, err := a.Db.BeginTx(ctx, nil)
+	tx, err := a.Db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	defer t.Rollback()
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
 
-	_, err = t.ExecContext(ctx, "insert into users (id, username, password, deposit, role) values (?, ?, ?, ?, ?)", uuid.New().String(), username, string(encPasswd), deposit, role)
+	_, err = tx.ExecContext(ctx, "insert into users (id, username, password, deposit, role) values (?, ?, ?, ?, ?)", uuid.New().String(), username, string(encPasswd), deposit, role)
 	if err != nil {
 		return err
 	}
 
-	return t.Commit()
+	return
 }
 
 func validateUsername(u string) error {
