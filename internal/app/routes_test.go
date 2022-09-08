@@ -187,6 +187,13 @@ func TestLoginSuccess(t *testing.T) {
 
 func TestGetCurrentUserData(t *testing.T) {
 
+	r, err := http.NewRequest(http.MethodGet, "/user", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+
 	os.Setenv("JWT_SIGNKEY", "some key")
 	os.Setenv("JWT_ALG", "HS256")
 
@@ -211,23 +218,11 @@ func TestGetCurrentUserData(t *testing.T) {
 
 	vm := NewApp("", db)
 
-	type response struct {
-		Username string
-		Role     string
-	}
-
-	r, err := http.NewRequest(http.MethodGet, "/user", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	tknStr, err := vm.getEncTokenString(testUserID, testUser)
 	if err != nil {
 		t.Fatal(err)
 	}
 	r.Header.Set("Authorization", "BEARER "+tknStr)
-
-	w := httptest.NewRecorder()
 
 	vm.Router.ServeHTTP(w, r)
 
@@ -238,6 +233,11 @@ func TestGetCurrentUserData(t *testing.T) {
 	}
 
 	defer resp.Body.Close()
+
+	type response struct {
+		Username string
+		Role     string
+	}
 
 	var respData response
 	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
@@ -251,4 +251,110 @@ func TestGetCurrentUserData(t *testing.T) {
 	if respData.Role != testRole {
 		t.Errorf("GET /user wrong role in response. Expected: %s, got: %s", testRole, respData.Role)
 	}
+}
+
+func TestSellersCanCreateProducts(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodPost, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w := httptest.NewRecorder()
+
+	os.Setenv("JWT_SIGNKEY", "some key")
+	os.Setenv("JWT_ALG", "HS256")
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	testUserID := "123"
+	testUser := "mihaiusr"
+	testPassword := "mh12&^KJlwekJ*"
+	testRole := model.ROLE_SELLER
+
+	columns := []string{"id", "username", "password", "deposit", "role"}
+
+	encPasswd, _ := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.MinCost)
+
+	mock.ExpectQuery("select id, username, password, deposit, role from users where id=").
+		WithArgs(testUserID).WillReturnRows(sqlmock.NewRows(columns).
+		AddRow(testUserID, testUser, encPasswd, 100, testRole))
+
+	vm := NewApp("", db)
+
+	tknStr, err := vm.getEncTokenString(testUserID, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Header.Set("Authorization", "BEARER "+tknStr)
+
+	vm.Router.ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+
+	if sc != http.StatusOK {
+		t.Errorf("Seller account cannot create products. Status code expected: %d, got: %d", http.StatusOK, sc)
+	}
+
+}
+
+func TestNonSellersCannotCreateProducts(t *testing.T) {
+
+	accounttypes := []model.TypeRole{model.ROLE_ADMIN, model.ROLE_BUYER}
+
+	for _, a := range accounttypes {
+		t.Run(a, func(t *testing.T) {
+			t.Parallel()
+			r, err := http.NewRequest(http.MethodPost, "/product", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			w := httptest.NewRecorder()
+
+			os.Setenv("JWT_SIGNKEY", "some key")
+			os.Setenv("JWT_ALG", "HS256")
+
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer db.Close()
+
+			testUserID := "123"
+			testUser := "mihaiusr"
+			testPassword := "mh12&^KJlwekJ*"
+			testRole := a
+
+			columns := []string{"id", "username", "password", "deposit", "role"}
+
+			encPasswd, _ := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.MinCost)
+
+			mock.ExpectQuery("select id, username, password, deposit, role from users where id=").
+				WithArgs(testUserID).WillReturnRows(sqlmock.NewRows(columns).
+				AddRow(testUserID, testUser, encPasswd, 100, testRole))
+
+			vm := NewApp("", db)
+
+			tknStr, err := vm.getEncTokenString(testUserID, testUser)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r.Header.Set("Authorization", "BEARER "+tknStr)
+
+			vm.Router.ServeHTTP(w, r)
+
+			sc := w.Result().StatusCode
+
+			if sc != http.StatusUnauthorized {
+				t.Errorf("Buyer accounts can create products. Status code expected: %d, got: %d", http.StatusUnauthorized, sc)
+			}
+
+		})
+	}
+
 }
