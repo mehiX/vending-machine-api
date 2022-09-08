@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/jwtauth/v5"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
 )
@@ -22,15 +21,12 @@ import (
 // @Router 		/user [get]
 func (a *app) handleShowCurrentUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_, claims, err := jwtauth.FromContext(r.Context())
-		if err != nil {
-			http.Error(w, "authentication error", http.StatusUnauthorized)
-			return
-		}
+		usr := r.Context().Value("user").(*model.User)
 
 		resp := currentUserResponse{
-			Username: claims["user"].(string),
-			Role:     claims["role"].(string),
+			Username: usr.Username,
+			Role:     usr.Role,
+			Deposit:  usr.Deposit,
 		}
 
 		w.Header().Set("Content-type", "application/json")
@@ -111,6 +107,7 @@ func (a *app) handleLogin() http.HandlerFunc {
 	}
 }
 
+// TODO remove role and use userID and username
 func (a *app) getEncTokenString(username string, role model.TypeRole) (string, error) {
 	t := jwt.New()
 	t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
@@ -129,6 +126,7 @@ func (a *app) getEncTokenString(username string, role model.TypeRole) (string, e
 type currentUserResponse struct {
 	Username string
 	Role     string
+	Deposit  int64
 }
 type addUserRequest struct {
 	Username string

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -48,4 +49,9 @@ func (a *app) dbFindOneByUsername(ctx context.Context, username string) (*model.
 	}
 
 	return &usr, nil
+}
+
+func (a *app) dbFindProductByID(ctx context.Context, productID string) (*model.Product, error) {
+	// TODO: implement
+	return nil, errors.New("not implemented")
 }
