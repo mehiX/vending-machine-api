@@ -89,7 +89,8 @@ const docTemplate = `{
                 ],
                 "tags": [
                     "private",
-                    "product"
+                    "product",
+                    "only sellers"
                 ],
                 "summary": "Create a product",
                 "parameters": [
@@ -109,6 +110,54 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "product not created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/product/{productID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Receive product ID in the context and delete it from the database",
+                "tags": [
+                    "private",
+                    "product",
+                    "only sellers"
+                ],
+                "summary": "Delete a product",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product ID",
+                        "name": "productID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "not authorized",
                         "schema": {
                             "type": "string"
                         }

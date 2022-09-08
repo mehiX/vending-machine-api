@@ -113,3 +113,37 @@ func TestHandleCreateProductSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestHandleDeleteProductFailNoUser(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodDelete, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	NewApp("", nil).handleDeleteProduct().ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusUnauthorized {
+		t.Error("should have a user logged in")
+	}
+}
+
+func TestHandleDeleteProductFailNoData(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodDelete, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_SELLER})
+
+	NewApp("", nil).handleDeleteProduct().ServeHTTP(w, r.WithContext(ctx))
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusBadRequest {
+		t.Error("should error if no product data in body")
+	}
+}

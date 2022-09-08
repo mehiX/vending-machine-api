@@ -109,6 +109,38 @@ paths:
       tags:
       - private
       - product
+      - only sellers
+  /product/{productID}:
+    delete:
+      description: Receive product ID in the context and delete it from the database
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "401":
+          description: not authorized
+          schema:
+            type: string
+        "500":
+          description: product not created
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a product
+      tags:
+      - private
+      - product
+      - only sellers
   /user:
     get:
       description: Fetches data from the auth token and returns it as a json object
