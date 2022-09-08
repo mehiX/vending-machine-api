@@ -10,7 +10,7 @@ import (
 
 // @Summary 	Create a product
 // @Description Receive product data in body, validate it and save in the database
-// @Tags		private, product
+// @Tags		private, product, only sellers
 // @Security 	ApiKeyAuth
 // @Accept		application/json
 // @Produces	application/json
@@ -58,9 +58,39 @@ func (a *app) handleUpdateProduct() http.HandlerFunc {
 	}
 }
 
+// @Summary 	Delete a product
+// @Description Receive product ID in the context and delete it from the database
+// @Tags		private, product, only sellers
+// @Security 	ApiKeyAuth
+// @Param 		productID path string true "Product ID"
+// @Success		204
+// @Failure		500 {string} string "product not created"
+// @Failure		400 {string} string "bad request"
+// @Failure		401 {string} string "not authorized"
+// @Router 		/product/{productID} [delete]
 func (a *app) handleDeleteProduct() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		seller, ok := r.Context().Value(userContextKey).(*model.User)
+		if !ok {
+			fmt.Println("error: no user in context")
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		product, ok := r.Context().Value(productContextKey).(*model.Product)
+		if !ok {
+			fmt.Println("error: no product in context")
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		}
+
+		if err := a.DeleteProduct(r.Context(), seller, product); err != nil {
+			fmt.Println("error: delete product", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
 

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -114,4 +115,39 @@ func (a *app) dbFindProductByID(ctx context.Context, productID string) (*model.P
 	}
 
 	return &prod, nil
+}
+
+func (a *app) dbDeleteProduct(ctx context.Context, productID, sellerID string) (err error) {
+
+	tx, err := a.Db.BeginTx(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		switch err {
+		case nil:
+			tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	qryDelProd := `delete from products where id=? and seller_id=?`
+
+	res, err := tx.ExecContext(ctx, qryDelProd, productID, sellerID)
+	if err != nil {
+		return
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return
+	}
+
+	if rowsAffected < 1 {
+		err = errors.New("no rows deleted")
+	}
+
+	return
 }
