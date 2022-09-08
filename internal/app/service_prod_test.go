@@ -27,25 +27,29 @@ func TestCreateProductFailUserNotSeller(t *testing.T) {
 }
 
 func TestCreateProductFaiInvalidAmount(t *testing.T) {
-	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1"}, -1, 0, ""); err == nil {
+	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1", Role: model.ROLE_SELLER}, -1, 0, ""); err == nil {
 		t.Fatal("should fail if invalid amount")
+	} else {
+		if err.Error() != "available amount must be positive" {
+			t.Fatalf("wrong error. Expected: %s, got: %s", "available amount must be positive", err.Error())
+		}
 	}
 }
 
 func TestCreateProductFailInvalidCost(t *testing.T) {
-	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1"}, 1, 0, ""); err == nil {
+	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1", Role: model.ROLE_SELLER}, 1, 0, ""); err == nil {
 		t.Fatal("should fail if invalid cost")
 	}
 }
 
 func TestCreateProductFailInvalidName(t *testing.T) {
-	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1"}, 1, 10, ""); err == nil {
+	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1", Role: model.ROLE_SELLER}, 1, 10, ""); err == nil {
 		t.Fatal("should fail if invalid name")
 	}
 }
 
 func TestCreateProductFailIfNoDatabase(t *testing.T) {
-	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1"}, 1, 10, "kasjdfja"); err == nil {
+	if err := NewApp("", nil).CreateProduct(context.Background(), &model.User{ID: "id1", Role: model.ROLE_SELLER}, 1, 10, "kasjdfja"); err == nil {
 		t.Fatal("should fail if no database connection")
 	}
 }
