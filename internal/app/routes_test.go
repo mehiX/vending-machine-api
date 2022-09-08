@@ -9,7 +9,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestHealth(t *testing.T) {
@@ -118,7 +120,21 @@ func TestLoginSuccess(t *testing.T) {
 	os.Setenv("JWT_ALG", "HS256")
 	os.Setenv("JWT_SIGNKEY", "somekey")
 
-	vm := NewApp("", nil)
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	columns := []string{"id", "username", "password", "deposit", "role"}
+
+	encPasswd, _ := bcrypt.GenerateFromPassword([]byte("mh12&^KJlwekJ*"), bcrypt.MinCost)
+
+	mock.ExpectQuery("select id, username, password, deposit, role from users where username=").
+		WithArgs("mihaiusr").WillReturnRows(sqlmock.NewRows(columns).
+		AddRow("id1", "mihaiusr", encPasswd, 100, "BUYER"))
+
+	vm := NewApp("", db)
 	router := vm.Router
 
 	type reqBody struct {
@@ -126,7 +142,7 @@ func TestLoginSuccess(t *testing.T) {
 		Password string
 	}
 
-	body := reqBody{"mihai", "password"}
+	body := reqBody{"mihaiusr", "mh12&^KJlwekJ*"}
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(body); err != nil {
@@ -156,7 +172,7 @@ func TestLoginSuccess(t *testing.T) {
 	}
 
 	claims := tkn.PrivateClaims()
-	if usr, ok := claims["user"]; !ok || usr != "mihai" {
+	if usr, ok := claims["user"]; !ok || usr != "mihaiusr" {
 		t.Error("Wrong or missing claim 'user'")
 	}
 	if role, ok := claims["role"]; !ok || role != model.ROLE_BUYER {
