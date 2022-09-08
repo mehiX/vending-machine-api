@@ -24,7 +24,35 @@ func (a *app) dbCreateUser(ctx context.Context, username, encPasswd string, depo
 		}
 	}()
 
-	_, err = tx.ExecContext(ctx, "insert into users (id, username, password, deposit, role) values (?, ?, ?, ?, ?)", uuid.New().String(), username, encPasswd, deposit, role)
+	qryUser := "insert into users (id, username, password, deposit, role) values (?, ?, ?, ?, ?)"
+
+	_, err = tx.ExecContext(ctx, qryUser, uuid.New().String(), username, encPasswd, deposit, role)
+	if err != nil {
+		return err
+	}
+
+	return
+
+}
+
+func (a *app) dbCreateProduct(ctx context.Context, sellerID string, amountAvailable int64, cost int64, name string) (err error) {
+	tx, err := a.Db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	qryProd := "insert into products (id, name, amountAvailable, cost, seller_id) values (?, ?, ?, ?, ?)"
+
+	_, err = tx.ExecContext(ctx, qryProd, uuid.New().String(), name, amountAvailable, cost, sellerID)
 	if err != nil {
 		return err
 	}

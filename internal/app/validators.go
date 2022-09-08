@@ -65,3 +65,11 @@ func validateRole(r string) error {
 
 	return nil
 }
+
+func validateCost(c int64) error {
+	if c == 0 || c%5 != 0 {
+		return errors.New("cost is 0 or not a multiple of 5")
+	}
+
+	return nil
+}

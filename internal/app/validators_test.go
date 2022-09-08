@@ -96,3 +96,20 @@ func TestRoleValidate(t *testing.T) {
 		}
 	}
 }
+
+func TestCostValidate(t *testing.T) {
+	good := []int64{5, 10, 15, 20, 25, 30, 35, 50, 100, 105, 150, 2005}
+	bad := []int64{0, 1, 2, 3, 4, 6, 7, 18, 23, 22, 2501}
+
+	for _, c := range good {
+		if err := validateCost(c); err != nil {
+			t.Errorf("unexpected error for cost: %d. Error: %s", c, err)
+		}
+	}
+
+	for _, c := range bad {
+		if err := validateCost(c); err == nil {
+			t.Errorf("cost should be rejected: %d", c)
+		}
+	}
+}

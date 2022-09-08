@@ -27,6 +27,12 @@ func (a *app) handleCreateProduct() http.HandlerFunc {
 			return
 		}
 
+		if r.Body == nil {
+			fmt.Println("no product data sent")
+			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			return
+		}
+
 		// get the product data
 		var req createProductRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
