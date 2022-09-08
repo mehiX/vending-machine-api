@@ -43,6 +43,6 @@ docker run --rm -d --env-file .env -p 7777:80 vending-machine:${VERSION}
 ## Generate code coverage report
 
 ```shell
-go test -coverprofile=cover.out ./pkg/...
+go test -coverprofile=cover.out ./internal/app/...
 go tool cover -html=cover.out -o cover.html
 ```
