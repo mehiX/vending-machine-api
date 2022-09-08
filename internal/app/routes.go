@@ -42,6 +42,7 @@ func (a *app) SetupRoutes() {
 
 // @Summary 	Health endpoing
 // @Description Validate the application is running
+// @Tags		public
 // @Produces	text/plain
 // @Success		200 {string} string "OK"
 // @Router 		/health [get]

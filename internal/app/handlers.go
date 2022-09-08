@@ -12,12 +12,15 @@ import (
 	"github.com/mehiX/vending-machine-api/internal/app/model"
 )
 
+// @Summary 	Get information about current user
+// @Description Fetches data from the auth token and returns it as a json object
+// @Tags		private
+// @Produces	application/json
+// @Success 	200 {object} currentUserResponse
+// @Failure		401 {string} string "not authorized"
+// @Failure		400 {string} string "bad request"
+// @Router 		/user [get]
 func (a *app) handleShowCurrentUser() http.HandlerFunc {
-	type response struct {
-		Username string
-		Role     string
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, claims, err := jwtauth.FromContext(r.Context())
 		if err != nil {
@@ -25,7 +28,7 @@ func (a *app) handleShowCurrentUser() http.HandlerFunc {
 			return
 		}
 
-		resp := response{
+		resp := currentUserResponse{
 			Username: claims["user"].(string),
 			Role:     claims["role"].(string),
 		}
@@ -42,23 +45,17 @@ func (a *app) handleShowCurrentUser() http.HandlerFunc {
 
 // @Summary 	Add a new user
 // @Description Receive user data in body, validate it and save in the database
-// @Security	ApiKeyAuth
+// @Tags		public
+// @Accept		application/json
 // @Produces	application/json
+// @Param 		request body addUserRequest true "user data"
 // @Success		201
 // @Failure		500 {string} string "user not created"
 // @Failure		400 {string} string "bad request"
 // @Router 		/user [post]
 func (a *app) handleAddUser() http.HandlerFunc {
-
-	type request struct {
-		Username string
-		Password string
-		Deposit  int64
-		Role     model.TypeRole
-	}
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		var data request
+		var data addUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 			fmt.Println("addUser error", err)
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -75,16 +72,21 @@ func (a *app) handleAddUser() http.HandlerFunc {
 	}
 }
 
+// @Summary 	User login
+// @Description Receive user credentials in body and return a valid token if they match a database record
+// @Tags		public
+// @Accept		application/json
+// @Produces	text/plain
+// @Param 		request body loginRequest true "user credentials"
+// @Success		200 {string} string "jwt"
+// @Failure		401 {string} string "not authorized"
+// @Failure		400 {string} string "bad request"
+// @Router 		/login [post]
 func (a *app) handleLogin() http.HandlerFunc {
-
-	type req struct {
-		Username string
-		Password string
-	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		var body req
+		var body loginRequest
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -122,4 +124,20 @@ func (a *app) getEncTokenString(username string, role model.TypeRole) (string, e
 
 	return tokenString, err
 
+}
+
+type currentUserResponse struct {
+	Username string
+	Role     string
+}
+type addUserRequest struct {
+	Username string
+	Password string
+	Deposit  int64
+	Role     model.TypeRole
+}
+
+type loginRequest struct {
+	Username string
+	Password string
 }

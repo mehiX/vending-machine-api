@@ -1,3 +1,29 @@
+definitions:
+  app.addUserRequest:
+    properties:
+      deposit:
+        type: integer
+      password:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  app.currentUserResponse:
+    properties:
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+  app.loginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact: {}
   title: Vending Machine API
@@ -12,6 +38,81 @@ paths:
           schema:
             type: string
       summary: Health endpoing
+      tags:
+      - public
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Receive user credentials in body and return a valid token if they
+        match a database record
+      parameters:
+      - description: user credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/app.loginRequest'
+      responses:
+        "200":
+          description: jwt
+          schema:
+            type: string
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "401":
+          description: not authorized
+          schema:
+            type: string
+      summary: User login
+      tags:
+      - public
+  /user:
+    get:
+      description: Fetches data from the auth token and returns it as a json object
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app.currentUserResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "401":
+          description: not authorized
+          schema:
+            type: string
+      summary: Get information about current user
+      tags:
+      - private
+    post:
+      consumes:
+      - application/json
+      description: Receive user data in body, validate it and save in the database
+      parameters:
+      - description: user data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/app.addUserRequest'
+      responses:
+        "201":
+          description: ""
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: user not created
+          schema:
+            type: string
+      summary: Add a new user
+      tags:
+      - public
 securityDefinitions:
   ApiKeyAuth:
     in: header
