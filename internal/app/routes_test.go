@@ -120,6 +120,10 @@ func TestLoginSuccess(t *testing.T) {
 	os.Setenv("JWT_ALG", "HS256")
 	os.Setenv("JWT_SIGNKEY", "somekey")
 
+	testUser := "mihaiusr"
+	testPassword := "mh12&^KJlwekJ*"
+	testRole := model.ROLE_BUYER
+
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatal(err)
@@ -128,11 +132,11 @@ func TestLoginSuccess(t *testing.T) {
 
 	columns := []string{"id", "username", "password", "deposit", "role"}
 
-	encPasswd, _ := bcrypt.GenerateFromPassword([]byte("mh12&^KJlwekJ*"), bcrypt.MinCost)
+	encPasswd, _ := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.MinCost)
 
 	mock.ExpectQuery("select id, username, password, deposit, role from users where username=").
-		WithArgs("mihaiusr").WillReturnRows(sqlmock.NewRows(columns).
-		AddRow("id1", "mihaiusr", encPasswd, 100, "BUYER"))
+		WithArgs(testUser).WillReturnRows(sqlmock.NewRows(columns).
+		AddRow("id1", testUser, encPasswd, 100, testRole))
 
 	vm := NewApp("", db)
 	router := vm.Router
@@ -142,7 +146,7 @@ func TestLoginSuccess(t *testing.T) {
 		Password string
 	}
 
-	body := reqBody{"mihaiusr", "mh12&^KJlwekJ*"}
+	body := reqBody{testUser, testPassword}
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(body); err != nil {
@@ -172,10 +176,10 @@ func TestLoginSuccess(t *testing.T) {
 	}
 
 	claims := tkn.PrivateClaims()
-	if usr, ok := claims["user"]; !ok || usr != "mihaiusr" {
+	if usr, ok := claims["user"]; !ok || usr != testUser {
 		t.Error("Wrong or missing claim 'user'")
 	}
-	if role, ok := claims["role"]; !ok || role != model.ROLE_BUYER {
-		t.Errorf("Wrong or missing claim 'role'. Expected: %s, got: %s", model.ROLE_BUYER, role)
+	if role, ok := claims["role"]; !ok || role != testRole {
+		t.Errorf("Wrong or missing claim 'role'. Expected: %s, got: %s", testRole, role)
 	}
 }
