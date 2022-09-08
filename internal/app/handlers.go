@@ -40,6 +40,14 @@ func (a *app) handleShowCurrentUser() http.HandlerFunc {
 
 }
 
+// @Summary 	Add a new user
+// @Description Receive user data in body, validate it and save in the database
+// @Security	ApiKeyAuth
+// @Produces	application/json
+// @Success		201
+// @Failure		500 {string} string "user not created"
+// @Failure		400 {string} string "bad request"
+// @Router 		/user [post]
 func (a *app) handleAddUser() http.HandlerFunc {
 
 	type request struct {
@@ -82,8 +90,14 @@ func (a *app) handleLogin() http.HandlerFunc {
 			return
 		}
 
+		usr, err := a.FindByCredentials(r.Context(), body.Username, body.Password)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
 		// TODO fetch use from database and do a proper login
-		tokenString, err := a.getEncTokenString(body.Username, model.ROLE_BUYER)
+		tokenString, err := a.getEncTokenString(usr.Username, usr.Role)
 		if err != nil {
 			fmt.Printf("Error signing token: %s\n", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)

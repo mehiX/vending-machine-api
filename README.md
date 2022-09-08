@@ -1,6 +1,9 @@
 # Vending Machine API
 
+[![Build Status](github.com/mehiX/vending-machine-api/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/features/actions)
+[![Codecov branch](https://img.shields.io/codecov/c/github/mehiX/vending-machine-api/main.svg)](https://codecov.io/gh/mehiX/vending-machine-api)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mehiX/vending-machine-api)](https://goreportcard.com/report/github.com/mehiX/vending-machine-api)
+[![Release](https://img.shields.io/github/release/mehiX/vending-machine-api.svg?style=flat-square)](https://github.com/mehiX/vending-machine-api/releases)
 
 ## Requirements
 
