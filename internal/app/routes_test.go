@@ -2,14 +2,20 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-chi/jwtauth/v5"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -366,5 +372,86 @@ func TestNonSellersCannotCreateProducts(t *testing.T) {
 
 		})
 	}
+}
 
+func TestUserCtxFailJwtError(t *testing.T) {
+
+	f := func(w http.ResponseWriter, r *http.Request) {
+
+	}
+
+	r, err := http.NewRequest(http.MethodGet, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	// simulate an auth error in the JWT flow
+	ctx := context.WithValue(context.Background(), jwtauth.ErrorCtxKey, errors.New("some jwt error"))
+	NewApp("", nil).UserCtx(http.HandlerFunc(f)).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+	sc := resp.StatusCode
+
+	if sc != http.StatusUnauthorized {
+		t.Error("should fail if no claims")
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.EqualFold(strings.TrimSpace(string(b)), "authentication error (no claims)") {
+		t.Errorf("wrong error body. Expected: %s, got: %s", "authentication error (no claims)", string(b))
+	}
+}
+
+func TestUserCtxFailNoUserIdInClaims(t *testing.T) {
+
+	os.Setenv("JWT_SIGNKEY", "some key")
+	os.Setenv("JWT_ALG", "HS256")
+
+	f := func(w http.ResponseWriter, r *http.Request) {
+
+	}
+
+	tkn := jwt.New()
+	tkn.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
+	tkn.Set(jwt.NotBeforeKey, time.Now())
+
+	claims, _ := tkn.AsMap(context.Background())
+
+	r, err := http.NewRequest(http.MethodGet, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	token, _, err := NewApp("", nil).JwtAuth.Encode(claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(context.Background(), jwtauth.TokenCtxKey, &token)
+
+	NewApp("", nil).UserCtx(http.HandlerFunc(f)).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+	sc := resp.StatusCode
+
+	if sc != http.StatusUnauthorized {
+		t.Fatal("should fail if no claims")
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.EqualFold(strings.TrimSpace(string(b)), "authentication error (no user id)") {
+		t.Errorf("wrong error body. Expected: %s, got: %s", "authentication error (no user id)", string(b))
+	}
 }

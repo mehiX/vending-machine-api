@@ -14,6 +14,15 @@ import (
 	swg "github.com/swaggo/http-swagger"
 )
 
+type contextKey struct {
+	name string
+}
+
+var (
+	userContextKey    = &contextKey{"user"}
+	productContextKey = &contextKey{"product"}
+)
+
 func (a *app) SetupRoutes() {
 
 	if a.Router == nil {
@@ -67,21 +76,17 @@ func (a *app) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
-type userContextKeyType string
-
-const userContextKey userContextKeyType = "user"
-
 func (a *app) UserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, claims, err := jwtauth.FromContext(r.Context())
 		if err != nil {
-			http.Error(w, "authentication error", http.StatusUnauthorized)
+			http.Error(w, "authentication error (no claims)", http.StatusUnauthorized)
 			return
 		}
 
 		userID, ok := claims[jwtUserIdKey].(string)
 		if !ok {
-			http.Error(w, "authentication error", http.StatusUnauthorized)
+			http.Error(w, "authentication error (no user id)", http.StatusUnauthorized)
 			return
 		}
 
@@ -109,10 +114,6 @@ func (a *app) SellerCtx(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
-type productContextKeyType string
-
-const productContextKey productContextKeyType = "product"
 
 func (a *app) ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
