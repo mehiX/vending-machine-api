@@ -309,3 +309,41 @@ func TestDbFindProductByIDSuccess(t *testing.T) {
 		t.Errorf("wrong seller id. expected: %s, got: %s", "seller 1", prod.SellerID)
 	}
 }
+
+func TestDbDeleteProductTxError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin().WillReturnError(errors.New("tx could not be created"))
+
+	if err := NewApp("", db).dbDeleteProduct(context.Background(), "", ""); err == nil {
+		t.Fatal("should exit since tx begin failed")
+	} else {
+		if err.Error() != "tx could not be created" {
+			t.Fatal("wrong error text")
+		}
+	}
+}
+
+func TestDbDeleteProductNoRowsDeleted(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`delete from products`).WillReturnResult(sqlmock.NewResult(0, 0))
+	mock.ExpectRollback()
+
+	if err := NewApp("", db).dbDeleteProduct(context.Background(), "", ""); err == nil {
+		t.Fatal("should exit with error since no rows were deleted")
+	} else {
+		if err.Error() != "no rows deleted" {
+			t.Fatal("wrong error text")
+		}
+	}
+}
