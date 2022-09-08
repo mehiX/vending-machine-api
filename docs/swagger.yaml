@@ -10,8 +10,19 @@ definitions:
       username:
         type: string
     type: object
+  app.createProductRequest:
+    properties:
+      amount_available:
+        type: integer
+      cost:
+        type: integer
+      name:
+        type: string
+    type: object
   app.currentUserResponse:
     properties:
+      deposit:
+        type: integer
       role:
         type: string
       username:
@@ -69,6 +80,33 @@ paths:
       summary: User login
       tags:
       - public
+  /product:
+    post:
+      consumes:
+      - application/json
+      description: Receive product data in body, validate it and save in the database
+      parameters:
+      - description: product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/app.createProductRequest'
+      responses:
+        "201":
+          description: ""
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: product not created
+          schema:
+            type: string
+      summary: Create a product
+      tags:
+      - private
+      - product
   /user:
     get:
       description: Fetches data from the auth token and returns it as a json object

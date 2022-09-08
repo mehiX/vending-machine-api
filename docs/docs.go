@@ -76,6 +76,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/product": {
+            "post": {
+                "description": "Receive product data in body, validate it and save in the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "private",
+                    "product"
+                ],
+                "summary": "Create a product",
+                "parameters": [
+                    {
+                        "description": "product data",
+                        "name": "product",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app.createProductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "product not created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/user": {
             "get": {
                 "description": "Fetches data from the auth token and returns it as a json object",
@@ -162,9 +203,26 @@ const docTemplate = `{
                 }
             }
         },
+        "app.createProductRequest": {
+            "type": "object",
+            "properties": {
+                "amount_available": {
+                    "type": "integer"
+                },
+                "cost": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "app.currentUserResponse": {
             "type": "object",
             "properties": {
+                "deposit": {
+                    "type": "integer"
+                },
                 "role": {
                     "type": "string"
                 },
