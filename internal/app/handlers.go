@@ -14,6 +14,7 @@ import (
 // @Summary 	Get information about current user
 // @Description Fetches data from the auth token and returns it as a json object
 // @Tags		private
+// @Security 	ApiKeyAuth
 // @Produces	application/json
 // @Success 	200 {object} currentUserResponse
 // @Failure		401 {string} string "not authorized"

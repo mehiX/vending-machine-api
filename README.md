@@ -20,13 +20,16 @@ Edit the values in `.env` to match your environment.
 ## Run 
 
 ```
+# generate up-to-date Swagger documentation
+swag init -d "./cmd/server" --parseDependency --parseInternal --parseDepth 1
+
 # check available command line options (provided defaults should work)
 go run ./cmd/server/... -h
 
 # run with defaults
 go run ./cmd/server/...
 
-# run on different port
+# specify the listening address on the command line
 go run ./cmd/server/... -l 127.0.0.1:9999
 ```
 

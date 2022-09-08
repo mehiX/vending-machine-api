@@ -11,6 +11,7 @@ import (
 // @Summary 	Create a product
 // @Description Receive product data in body, validate it and save in the database
 // @Tags		private, product
+// @Security 	ApiKeyAuth
 // @Accept		application/json
 // @Produces	application/json
 // @Param 		product body createProductRequest true "product data"

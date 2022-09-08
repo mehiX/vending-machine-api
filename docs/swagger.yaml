@@ -103,6 +103,8 @@ paths:
           description: product not created
           schema:
             type: string
+      security:
+      - ApiKeyAuth: []
       summary: Create a product
       tags:
       - private
@@ -123,6 +125,8 @@ paths:
           description: not authorized
           schema:
             type: string
+      security:
+      - ApiKeyAuth: []
       summary: Get information about current user
       tags:
       - private

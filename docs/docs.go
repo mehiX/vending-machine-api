@@ -78,6 +78,11 @@ const docTemplate = `{
         },
         "/product": {
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Receive product data in body, validate it and save in the database",
                 "consumes": [
                     "application/json"
@@ -119,6 +124,11 @@ const docTemplate = `{
         },
         "/user": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Fetches data from the auth token and returns it as a json object",
                 "tags": [
                     "private"
