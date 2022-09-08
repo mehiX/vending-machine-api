@@ -255,7 +255,17 @@ func TestGetCurrentUserData(t *testing.T) {
 
 func TestSellersCanCreateProducts(t *testing.T) {
 
-	r, err := http.NewRequest(http.MethodPost, "/product", nil)
+	var buf bytes.Buffer
+	data := createProductRequest{
+		AmountAvailable: 100,
+		Cost:            50,
+		Name:            "Product 1",
+	}
+	if err := json.NewEncoder(&buf).Encode(data); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := http.NewRequest(http.MethodPost, "/product", &buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -296,8 +306,8 @@ func TestSellersCanCreateProducts(t *testing.T) {
 
 	sc := w.Result().StatusCode
 
-	if sc != http.StatusOK {
-		t.Errorf("Seller account cannot create products. Status code expected: %d, got: %d", http.StatusOK, sc)
+	if sc == http.StatusUnauthorized {
+		t.Errorf("Seller account cannot create products")
 	}
 
 }
