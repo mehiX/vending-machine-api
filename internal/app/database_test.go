@@ -187,3 +187,61 @@ func TestFindUserByIDNoMatch(t *testing.T) {
 		t.Errorf("there are unfulfilled expectations: %s", err)
 	}
 }
+
+func TestDbCreateUserCannotStartTx(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin().WillReturnError(errors.New("cannot open tx"))
+
+	if err := NewApp("", db).dbCreateUser(context.Background(), "", "", 10, ""); err == nil {
+		t.Fatal("should fail if DB cannot open a TX")
+	}
+}
+
+func TestDbCreateProductFailDbError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`insert into products \(`).WillReturnError(errors.New("duplicate entry - same name"))
+	mock.ExpectRollback()
+
+	if err := NewApp("", db).dbCreateProduct(context.Background(), "sellerid", 10, 10, "product name"); err == nil {
+		t.Error("should return error if the insert failed")
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDbFindUserByIDFailNoConnection(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	if _, err := NewApp("", db).dbFindUserByID(context.Background(), "userid"); err == nil {
+		t.Fatal("should fail if db connection already closed")
+	}
+}
+
+func TestDbFindUserByUsernameFailNoConnection(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	if _, err := NewApp("", db).dbFindUserByUsername(context.Background(), "username"); err == nil {
+		t.Fatal("should fail if db connection already closed")
+	}
+}
