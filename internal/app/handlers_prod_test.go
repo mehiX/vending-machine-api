@@ -281,7 +281,8 @@ func TestHandleListProductsSuccessMany(t *testing.T) {
 	cols := []string{"id", "name", "available_amount", "cost", "seller_id"}
 	mock.ExpectQuery(`select .* from products`).WillReturnRows(sqlmock.NewRows(cols).
 		AddRow("1", "prod 1", 10, 10, "seller 1").
-		AddRow("2", "prod 2", 10, 10, "seller 1"))
+		AddRow("2", "prod 2", 10, 10, "seller 1").
+		AddRow("3", nil, 10, 10, "seller 1"))
 
 	NewApp("", db).handleListProducts().ServeHTTP(w, r)
 
