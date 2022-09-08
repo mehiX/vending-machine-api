@@ -94,15 +94,29 @@ func (a *app) handleDeleteProduct() http.HandlerFunc {
 	}
 }
 
-func (a *app) handleListProducts() http.HandlerFunc {
+func (a *app) handleProductDetails() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 	}
 }
 
-func (a *app) handleProductDetails() http.HandlerFunc {
+func (a *app) handleListProducts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		products, err := a.ListProducts(r.Context())
+		if err != nil {
+			fmt.Println("list products", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-type", "application/json")
+
+		if err := json.NewEncoder(w).Encode(products); err != nil {
+			fmt.Println("encode products", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

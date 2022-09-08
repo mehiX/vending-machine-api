@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -145,5 +146,169 @@ func TestHandleDeleteProductFailNoData(t *testing.T) {
 	sc := w.Result().StatusCode
 	if sc != http.StatusBadRequest {
 		t.Error("should error if no product data in body")
+	}
+}
+
+func TestHandleListProductsNoDb(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/product/list", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	NewApp("", nil).handleListProducts().ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+
+	if sc != http.StatusInternalServerError {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusInternalServerError, sc)
+	}
+}
+
+func TestHandleListProductsDbConnFail(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/product/list", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	NewApp("", db).handleListProducts().ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+
+	if sc != http.StatusInternalServerError {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusInternalServerError, sc)
+	}
+}
+
+func TestHandleListProductsDbFail(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/product/list", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery(`select .* from products`).WillReturnError(errors.New("db error"))
+
+	NewApp("", db).handleListProducts().ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+
+	if sc != http.StatusInternalServerError {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusInternalServerError, sc)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHandleListProductsSuccessNone(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/product/list", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery(`select .* from products`).WillReturnRows(&sqlmock.Rows{})
+
+	NewApp("", db).handleListProducts().ServeHTTP(w, r)
+
+	resp := w.Result()
+	sc := resp.StatusCode
+
+	if sc != http.StatusOK {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusOK, sc)
+	}
+
+	ct := resp.Header.Get("Content-Type")
+	if ct != "application/json" {
+		t.Errorf("wrong content type. expected: %s, got: %s", "application/json", ct)
+	}
+
+	defer resp.Body.Close()
+
+	var products []model.Product
+	if err := json.NewDecoder(resp.Body).Decode(&products); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(products) != 0 {
+		t.Errorf("wrong number of records. Expected: %d, got: %d", 0, len(products))
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHandleListProductsSuccessMany(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/product/list", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	cols := []string{"id", "name", "available_amount", "cost", "seller_id"}
+	mock.ExpectQuery(`select .* from products`).WillReturnRows(sqlmock.NewRows(cols).
+		AddRow("1", "prod 1", 10, 10, "seller 1").
+		AddRow("2", "prod 2", 10, 10, "seller 1"))
+
+	NewApp("", db).handleListProducts().ServeHTTP(w, r)
+
+	resp := w.Result()
+	sc := resp.StatusCode
+
+	if sc != http.StatusOK {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusOK, sc)
+	}
+
+	ct := resp.Header.Get("Content-Type")
+	if ct != "application/json" {
+		t.Errorf("wrong content type. expected: %s, got: %s", "application/json", ct)
+	}
+
+	defer resp.Body.Close()
+
+	var products []model.Product
+	if err := json.NewDecoder(resp.Body).Decode(&products); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(products) != 2 {
+		t.Errorf("wrong number of records. Expected: %d, got: %d", 2, len(products))
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
 	}
 }

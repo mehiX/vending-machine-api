@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -62,4 +63,35 @@ func (a *app) DeleteProduct(ctx context.Context, seller *model.User, product *mo
 	}
 
 	return a.dbDeleteProduct(ctx, product.ID, seller.ID)
+}
+
+func (a *app) ListProducts(ctx context.Context) ([]model.Product, error) {
+
+	if a.Db == nil {
+		return nil, errors.New("no db conn")
+	}
+
+	conn, err := a.Db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := conn.QueryContext(ctx, `select id, name, available_amount, cost, seller_id from products`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	products := make([]model.Product, 0)
+
+	for rows.Next() {
+		var p model.Product
+		if err := rows.Scan(&p.ID, &p.Name, &p.AmountAvailable, &p.Cost, &p.SellerID); err != nil {
+			fmt.Println("product record error", err)
+			continue
+		}
+		products = append(products, p)
+	}
+
+	return products, nil
 }
