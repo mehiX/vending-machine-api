@@ -120,6 +120,7 @@ func TestLoginSuccess(t *testing.T) {
 	os.Setenv("JWT_ALG", "HS256")
 	os.Setenv("JWT_SIGNKEY", "somekey")
 
+	testID := "id123"
 	testUser := "mihaiusr"
 	testPassword := "mh12&^KJlwekJ*"
 	testRole := model.ROLE_BUYER
@@ -136,7 +137,7 @@ func TestLoginSuccess(t *testing.T) {
 
 	mock.ExpectQuery("select id, username, password, deposit, role from users where username=").
 		WithArgs(testUser).WillReturnRows(sqlmock.NewRows(columns).
-		AddRow("id1", testUser, encPasswd, 100, testRole))
+		AddRow(testID, testUser, encPasswd, 100, testRole))
 
 	vm := NewApp("", db)
 	router := vm.Router
@@ -176,10 +177,78 @@ func TestLoginSuccess(t *testing.T) {
 	}
 
 	claims := tkn.PrivateClaims()
-	if usr, ok := claims["user"]; !ok || usr != testUser {
-		t.Error("Wrong or missing claim 'user'")
+	if usr, ok := claims[jwtUsernameKey]; !ok || usr != testUser {
+		t.Error("Wrong or missing claim 'username'")
 	}
-	if role, ok := claims["role"]; !ok || role != testRole {
-		t.Errorf("Wrong or missing claim 'role'. Expected: %s, got: %s", testRole, role)
+	if usrID, ok := claims[jwtUserIdKey]; !ok || usrID != testID {
+		t.Errorf("Wrong or missing claim 'userID'. Expected: %s, got: %s", testID, usrID)
+	}
+}
+
+func TestGetCurrentUserData(t *testing.T) {
+
+	os.Setenv("JWT_SIGNKEY", "some key")
+	os.Setenv("JWT_ALG", "HS256")
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	testUserID := "123"
+	testUser := "mihaiusr"
+	testPassword := "mh12&^KJlwekJ*"
+	testRole := model.ROLE_BUYER
+
+	columns := []string{"id", "username", "password", "deposit", "role"}
+
+	encPasswd, _ := bcrypt.GenerateFromPassword([]byte(testPassword), bcrypt.MinCost)
+
+	mock.ExpectQuery("select id, username, password, deposit, role from users where id=").
+		WithArgs(testUserID).WillReturnRows(sqlmock.NewRows(columns).
+		AddRow(testUserID, testUser, encPasswd, 100, testRole))
+
+	vm := NewApp("", db)
+
+	type response struct {
+		Username string
+		Role     string
+	}
+
+	r, err := http.NewRequest(http.MethodGet, "/user", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tknStr, err := vm.getEncTokenString(testUserID, testUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r.Header.Set("Authorization", "BEARER "+tknStr)
+
+	w := httptest.NewRecorder()
+
+	vm.Router.ServeHTTP(w, r)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("GET /user wrong response code. Expected: %d, got: %d", http.StatusOK, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+
+	var respData response
+	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+		t.Fatal(err)
+	}
+
+	if respData.Username != testUser {
+		t.Errorf("GET /user wrong username in response. Expected: %s, got: %s", testUser, respData.Username)
+	}
+
+	if respData.Role != testRole {
+		t.Errorf("GET /user wrong role in response. Expected: %s, got: %s", testRole, respData.Role)
 	}
 }

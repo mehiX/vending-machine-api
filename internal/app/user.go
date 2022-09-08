@@ -42,7 +42,7 @@ func (a *app) CreateUser(ctx context.Context, username, password string, deposit
 
 func (a *app) FindByCredentials(ctx context.Context, username, password string) (*model.User, error) {
 
-	usr, err := a.dbFindOneByUsername(ctx, username)
+	usr, err := a.dbFindUserByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}

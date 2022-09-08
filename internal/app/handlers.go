@@ -21,7 +21,7 @@ import (
 // @Router 		/user [get]
 func (a *app) handleShowCurrentUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		usr := r.Context().Value("user").(*model.User)
+		usr := r.Context().Value(userContextKey).(*model.User)
 
 		resp := currentUserResponse{
 			Username: usr.Username,
@@ -95,7 +95,7 @@ func (a *app) handleLogin() http.HandlerFunc {
 		}
 
 		// TODO fetch use from database and do a proper login
-		tokenString, err := a.getEncTokenString(usr.Username, usr.Role)
+		tokenString, err := a.getEncTokenString(usr.ID, usr.Username)
 		if err != nil {
 			fmt.Printf("Error signing token: %s\n", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -107,13 +107,18 @@ func (a *app) handleLogin() http.HandlerFunc {
 	}
 }
 
+const (
+	jwtUsernameKey = "username"
+	jwtUserIdKey   = "userID"
+)
+
 // TODO remove role and use userID and username
-func (a *app) getEncTokenString(username string, role model.TypeRole) (string, error) {
+func (a *app) getEncTokenString(userID, username string) (string, error) {
 	t := jwt.New()
 	t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
 	t.Set(jwt.NotBeforeKey, time.Now())
-	t.Set("user", username)
-	t.Set("role", role)
+	t.Set(jwtUserIdKey, userID)
+	t.Set(jwtUsernameKey, username)
 
 	claims, _ := t.AsMap(context.Background())
 

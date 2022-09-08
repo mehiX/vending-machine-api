@@ -67,6 +67,10 @@ func (a *app) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
 }
 
+type userContextKeyType string
+
+const userContextKey userContextKeyType = "user"
+
 func (a *app) UserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, claims, err := jwtauth.FromContext(r.Context())
@@ -75,15 +79,19 @@ func (a *app) UserCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		username := claims["user"].(string)
+		userID, ok := claims[jwtUserIdKey].(string)
+		if !ok {
+			http.Error(w, "authentication error", http.StatusUnauthorized)
+			return
+		}
 
-		usr, err := a.dbFindOneByUsername(r.Context(), username)
+		usr, err := a.dbFindUserByID(r.Context(), userID)
 		if err != nil {
 			http.Error(w, "authentication error", http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user", usr)
+		ctx := context.WithValue(r.Context(), userContextKey, usr)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -92,7 +100,7 @@ func (a *app) UserCtx(next http.Handler) http.Handler {
 // Requires a "user" object in current request context
 func (a *app) SellerCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		usr, ok := r.Context().Value("user").(*model.User)
+		usr, ok := r.Context().Value(userContextKey).(*model.User)
 		if !ok || usr.Role != model.ROLE_SELLER {
 			http.Error(w, "authentication error", http.StatusUnauthorized)
 			return
@@ -102,6 +110,10 @@ func (a *app) SellerCtx(next http.Handler) http.Handler {
 	})
 }
 
+type productContextKeyType string
+
+const productContextKey productContextKeyType = "product"
+
 func (a *app) ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		productID := chi.URLParam(r, "productID")
@@ -110,7 +122,7 @@ func (a *app) ProductCtx(next http.Handler) http.Handler {
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
-		ctx := context.WithValue(r.Context(), "product", product)
+		ctx := context.WithValue(r.Context(), productContextKey, product)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

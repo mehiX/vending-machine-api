@@ -33,7 +33,25 @@ func (a *app) dbCreateUser(ctx context.Context, username, encPasswd string, depo
 
 }
 
-func (a *app) dbFindOneByUsername(ctx context.Context, username string) (*model.User, error) {
+func (a *app) dbFindUserByID(ctx context.Context, userID string) (*model.User, error) {
+
+	conn, err := a.Db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	var usr model.User
+
+	row := conn.QueryRowContext(ctx, `select id, username, password, deposit, role from users where id=?`, userID)
+	if err := row.Scan(&usr.ID, &usr.Username, &usr.Password, &usr.Deposit, &usr.Role); err != nil {
+		return nil, err
+	}
+
+	return &usr, nil
+}
+
+func (a *app) dbFindUserByUsername(ctx context.Context, username string) (*model.User, error) {
 
 	conn, err := a.Db.Conn(ctx)
 	if err != nil {
