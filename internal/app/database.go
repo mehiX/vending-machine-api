@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -98,6 +97,21 @@ func (a *app) dbFindUserByUsername(ctx context.Context, username string) (*model
 }
 
 func (a *app) dbFindProductByID(ctx context.Context, productID string) (*model.Product, error) {
-	// TODO: implement
-	return nil, errors.New("not implemented")
+
+	conn, err := a.Db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	var prod model.Product
+
+	qryProdByID := `select id, name, available_amount, count, seller_id from products where id=?`
+
+	row := conn.QueryRowContext(ctx, qryProdByID, productID)
+	if err := row.Scan(&prod.ID, &prod.Name, &prod.AmountAvailable, &prod.Cost, &prod.SellerID); err != nil {
+		return nil, err
+	}
+
+	return &prod, nil
 }

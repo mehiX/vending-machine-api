@@ -245,3 +245,67 @@ func TestDbFindUserByUsernameFailNoConnection(t *testing.T) {
 		t.Fatal("should fail if db connection already closed")
 	}
 }
+
+func TestDbFindProductByIDFailNoConnection(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.Close()
+
+	if _, err := NewApp("", db).dbFindProductByID(context.Background(), "productid"); err == nil {
+		t.Fatal("should fail if db connection already closed")
+	}
+}
+
+func TestDbFindProductByIDFailQuery(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery(`select .* from products where id=`).WithArgs("productid").WillReturnError(errors.New("no records found"))
+
+	_, err = NewApp("", db).dbFindProductByID(context.Background(), "productid")
+	if err == nil {
+		t.Fatal("should return error if the query fails")
+	}
+}
+
+func TestDbFindProductByIDSuccess(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	columns := []string{"id", "name", "available_amount", "cost", "seller_id"}
+
+	mock.ExpectQuery(`select .* from products where id=`).WithArgs("productid").WillReturnRows(sqlmock.NewRows(columns).AddRow("productid", "product name", 10, 5, "seller 1"))
+
+	prod, err := NewApp("", db).dbFindProductByID(context.Background(), "productid")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if prod.ID != "productid" {
+		t.Errorf("wrong product id. expected: %s, got: %s", "productid", prod.ID)
+	}
+
+	if prod.Name != "product name" {
+		t.Errorf("wrong product name. expected: %s, got: %s", "product name", prod.Name)
+	}
+
+	if prod.AmountAvailable != 10 {
+		t.Errorf("wrong amount available. expected: %d, got: %d", 10, prod.AmountAvailable)
+	}
+
+	if prod.Cost != 5 {
+		t.Errorf("wrong cost. expected: %d, got: %d", 5, prod.Cost)
+	}
+
+	if prod.SellerID != "seller 1" {
+		t.Errorf("wrong seller id. expected: %s, got: %s", "seller 1", prod.SellerID)
+	}
+}

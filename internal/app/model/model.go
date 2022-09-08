@@ -9,6 +9,7 @@ var (
 )
 
 type Product struct {
+	ID              string `json:"id"`
 	AmountAvailable int64  `json:"amount_available"`
 	Cost            int64  `json:"cost"`
 	Name            string `json:"name"`
