@@ -65,7 +65,9 @@ func (a *app) handleCreateProduct() http.HandlerFunc {
 // @Router 		/product [put]
 //
 // handleUpdateProduct receives updates to a product's data and applies them in the database
-// Only `name` and `cost` can be updated. Only the seller of the product can update its data.
+// Only `name` and `cost` can be updated.
+// Only the seller of the product can update its data.
+// It doesn't return any data, nor does it signal that nothing was updated if the provided data is partially or completely wrong.
 func (a *app) handleUpdateProduct() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
