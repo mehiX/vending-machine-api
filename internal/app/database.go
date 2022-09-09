@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -127,7 +128,7 @@ func (a *app) dbDeleteProduct(ctx context.Context, productID, sellerID string) (
 	defer func() {
 		switch err {
 		case nil:
-			tx.Commit()
+			err = tx.Commit()
 		default:
 			tx.Rollback()
 		}
@@ -148,6 +149,55 @@ func (a *app) dbDeleteProduct(ctx context.Context, productID, sellerID string) (
 	if rowsAffected < 1 {
 		err = errors.New("no rows deleted")
 	}
+
+	return
+}
+
+func (a *app) dbListProducts(ctx context.Context) ([]model.Product, error) {
+	conn, err := a.Db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := conn.QueryContext(ctx, `select id, name, available_amount, cost, seller_id from products`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	products := make([]model.Product, 0)
+
+	for rows.Next() {
+		var p model.Product
+		if err := rows.Scan(&p.ID, &p.Name, &p.AmountAvailable, &p.Cost, &p.SellerID); err != nil {
+			fmt.Println("product record error", err)
+			continue
+		}
+		products = append(products, p)
+	}
+
+	return products, nil
+}
+
+func (a *app) dbUpdateProduct(ctx context.Context, p model.Product) (err error) {
+
+	tx, err := a.Db.BeginTx(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	qryUpdProd := `update products set name=?, cost=? where id=? and seller_id=?`
+
+	_, err = tx.ExecContext(ctx, qryUpdProd, p.Name, p.Cost, p.ID, p.SellerID)
 
 	return
 }

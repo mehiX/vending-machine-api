@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -71,27 +70,47 @@ func (a *app) ListProducts(ctx context.Context) ([]model.Product, error) {
 		return nil, errors.New("no db conn")
 	}
 
-	conn, err := a.Db.Conn(ctx)
-	if err != nil {
-		return nil, err
+	return a.dbListProducts(ctx)
+
+}
+
+// UpdateProduct allows a seller to update his products' data. Only `name` and `cost` can be update.
+// For security, only the parameters that can change can be passed as arguments
+func (a *app) UpdateProduct(ctx context.Context, seller *model.User, prod *model.Product, newName string, newCost int64) (err error) {
+
+	if seller == nil || prod == nil {
+		return errors.New("seller and product must exist")
 	}
 
-	rows, err := conn.QueryContext(ctx, `select id, name, available_amount, cost, seller_id from products`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	products := make([]model.Product, 0)
-
-	for rows.Next() {
-		var p model.Product
-		if err := rows.Scan(&p.ID, &p.Name, &p.AmountAvailable, &p.Cost, &p.SellerID); err != nil {
-			fmt.Println("product record error", err)
-			continue
-		}
-		products = append(products, p)
+	if seller.ID != prod.SellerID {
+		return errors.New("seller can only modify own products")
 	}
 
-	return products, nil
+	p := model.Product{
+		ID:              prod.ID,
+		SellerID:        prod.SellerID,
+		AmountAvailable: prod.AmountAvailable,
+		Name:            prod.Name,
+		Cost:            prod.Cost,
+	}
+
+	s := strings.TrimSpace(newName)
+	if s != "" {
+		p.Name = s
+	}
+
+	if err = validateCost(newCost); err == nil {
+		p.Cost = newCost
+	}
+
+	if p.Name == prod.Name && p.Cost == prod.Cost {
+		// nothing to update
+		return nil
+	}
+
+	if a.Db == nil {
+		return errors.New("no database")
+	}
+
+	return a.dbUpdateProduct(ctx, p)
 }

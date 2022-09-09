@@ -391,3 +391,39 @@ func TestHandleProductDetailsSuccess(t *testing.T) {
 		t.Errorf("wrong cost. Expected: %d, got: %d", prod.Cost, p.Cost)
 	}
 }
+
+func TestHandleUpdateProductFailNoUserInCtx(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductFailUserIsNotSeller(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductFailNoProductInCtx(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductFailNotSameSeller(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductFailNoDatabase(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductFailDatabaseError(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductFailWrongName(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductFailWrongCost(t *testing.T) {
+
+}
+
+func TestHandleUpdateProductSuccess(t *testing.T) {
+
+}

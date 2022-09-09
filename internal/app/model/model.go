@@ -1,13 +1,5 @@
 package model
 
-import "errors"
-
-var (
-	ErrNotImplemented  = errors.New("not implemented")
-	ErrUsernameExists  = errors.New("user already exists")
-	ErrInvalidPassword = errors.New("password is invalid")
-)
-
 type Product struct {
 	ID              string `json:"id"`
 	AmountAvailable int64  `json:"amount_available"`

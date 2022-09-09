@@ -19,8 +19,8 @@ type contextKey struct {
 }
 
 var (
-	userContextKey    = &contextKey{"user"}
-	productContextKey = &contextKey{"product"}
+	userContextKey    = &contextKey{"user"}    // holds a reference to the current user
+	productContextKey = &contextKey{"product"} // holds a reference to the current product (based on the productID in path)
 )
 
 func (a *app) SetupRoutes() {

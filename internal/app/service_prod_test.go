@@ -192,3 +192,83 @@ func TestDeleteProductSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestUpdateProductFailNoDb(t *testing.T) {
+
+	if err := NewApp("", nil).UpdateProduct(context.Background(), &model.User{ID: "sellerid"}, &model.Product{SellerID: "sellerid"}, "good name", 10); err == nil {
+		t.Fatal("should return error if no db configured")
+	} else {
+		if err.Error() != "no database" {
+			t.Errorf("wrong error for bad product name. expected: %s, got: %s", "no database", err.Error())
+		}
+	}
+}
+
+func TestUpdateProductFailDbError(t *testing.T) {
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin().WillReturnError(errors.New("no transaction"))
+
+	if err := NewApp("", db).UpdateProduct(context.Background(), &model.User{ID: "sellerid"}, &model.Product{SellerID: "sellerid"}, "good name", 10); err == nil {
+		t.Fatal("should return error if there was a database error")
+	} else {
+		if err.Error() != "no transaction" {
+			t.Errorf("should return the database error. Expected: %s, got: %s", "no transaction", err.Error())
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdateProductFailQueryError(t *testing.T) {
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update products set name=\?, cost=\? where id=\? and seller_id=/?`).WillReturnError(errors.New("update failed"))
+	mock.ExpectRollback()
+
+	if err := NewApp("", db).UpdateProduct(context.Background(), &model.User{ID: "sellerid"}, &model.Product{SellerID: "sellerid"}, "good name", 10); err == nil {
+		t.Fatal("should return error if there was a database error")
+	} else {
+		if err.Error() != "update failed" {
+			t.Errorf("should return the database error")
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdateProductSuccess(t *testing.T) {
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update products set name=\?, cost=\? where id=\? and seller_id=\?`).WithArgs("good name", 10, "id", "sellerid").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	if err := NewApp("", db).UpdateProduct(context.Background(), &model.User{ID: "sellerid"}, &model.Product{ID: "id", SellerID: "sellerid"}, "good name", 10); err != nil {
+		t.Fatalf("update with good data failed with error: %s", err.Error())
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}

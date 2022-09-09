@@ -347,3 +347,88 @@ func TestDbDeleteProductNoRowsDeleted(t *testing.T) {
 		}
 	}
 }
+
+func TestDbUpdateProductFailNoTx(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin().WillReturnError(errors.New("no transaction"))
+
+	if err := NewApp("", db).dbUpdateProduct(context.Background(), model.Product{}); err == nil {
+		t.Fatal("should fail if no TX")
+	} else {
+		if err.Error() != "no transaction" {
+			t.Fatal("should return the database error")
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDbUpdateProductFailQueryError(t *testing.T) {
+
+	prod := model.Product{
+		ID:              "id",
+		Name:            "name",
+		AmountAvailable: 10,
+		Cost:            5,
+		SellerID:        "sellerid",
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update products set name`).WithArgs(prod.Name, prod.Cost, prod.ID, prod.SellerID).WillReturnError(errors.New("db error"))
+	mock.ExpectRollback()
+
+	if err := NewApp("", db).dbUpdateProduct(context.Background(), prod); err == nil {
+		t.Fatal("should fail if the query fails")
+	} else {
+		if err.Error() != "db error" {
+			t.Fatal("should return the database error")
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+func TestDbUpdateProductFailSuccess(t *testing.T) {
+	prod := model.Product{
+		ID:              "id",
+		Name:            "name",
+		AmountAvailable: 10,
+		Cost:            5,
+		SellerID:        "sellerid",
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update products set name`).WithArgs(prod.Name, prod.Cost, prod.ID, prod.SellerID).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	if err := NewApp("", db).dbUpdateProduct(context.Background(), prod); err != nil {
+		t.Errorf("product updated but received error: %s", err.Error())
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+
+}
