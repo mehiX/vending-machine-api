@@ -48,7 +48,10 @@ or run by pulling the latest image
 ```shell
 docker login ghcr.io
 
-docker run --rm -d --env-file .env -p 7777:80 --pull always ghcr.io/mehix/vending-machine-api:main
+docker run --rm -d --env-file .env -p 7777:80 \
+  --pull always \
+  ghcr.io/mehix/vending-machine-api:main
+```
 
 ## Generate code coverage report
 
