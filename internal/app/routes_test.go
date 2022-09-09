@@ -455,3 +455,160 @@ func TestUserCtxFailNoUserIdInClaims(t *testing.T) {
 		t.Errorf("wrong error body. Expected: %s, got: %s", "authentication error (no user id)", string(b))
 	}
 }
+
+func TestUserCtxFailUserIdInClaimsMIssingFromDb(t *testing.T) {
+
+	os.Setenv("JWT_SIGNKEY", "some key")
+	os.Setenv("JWT_ALG", "HS256")
+
+	f := func(w http.ResponseWriter, r *http.Request) {
+
+	}
+
+	tkn := jwt.New()
+	tkn.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
+	tkn.Set(jwt.NotBeforeKey, time.Now())
+	tkn.Set(jwtUserIdKey, "user id not in DB")
+
+	claims, err := tkn.AsMap(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := http.NewRequest(http.MethodGet, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery(`select .* from users where id=`).WithArgs("user id not in DB").WillReturnError(errors.New("empty result"))
+
+	vm := NewApp("", db)
+
+	token, _, err := vm.JwtAuth.Encode(claims)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(context.Background(), jwtauth.TokenCtxKey, token)
+
+	vm.UserCtx(http.HandlerFunc(f)).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+	sc := resp.StatusCode
+
+	if sc != http.StatusUnauthorized {
+		t.Fatal("should fail if user id in claims does not exist in DB")
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.EqualFold(strings.TrimSpace(string(b)), "authentication error") {
+		t.Errorf("wrong error body. Expected: %s, got: %s", "authentication error", string(b))
+	}
+}
+
+func TestRouteProductDetailsFailMissingProduct(t *testing.T) {
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery(`select .* from products where id=`).WithArgs("product-id-1234").WillReturnError(errors.New("no records found"))
+
+	r, err := http.NewRequest(http.MethodGet, "/product/product-id-1234", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	NewApp("", db).Router.ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusNotFound {
+		t.Errorf("wrong status code for product not found. Expected: %d, got: %d", http.StatusNotFound, sc)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRouteProductDetailsSuccess(t *testing.T) {
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	prod := model.Product{
+		ID:              "product-id-1234",
+		Name:            "name",
+		AmountAvailable: 5,
+		Cost:            15,
+		SellerID:        "seller-id-12",
+	}
+
+	cols := []string{"id", "name", "amount_available", "cost", "seller_id"}
+	mock.ExpectQuery(`select .* from products where id=`).WithArgs("product-id-1234").
+		WillReturnRows(sqlmock.NewRows(cols).AddRow(prod.ID, prod.Name, prod.AmountAvailable, prod.Cost, prod.SellerID))
+
+	r, err := http.NewRequest(http.MethodGet, "/product/product-id-1234", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	NewApp("", db).Router.ServeHTTP(w, r)
+
+	resp := w.Result()
+
+	sc := resp.StatusCode
+	if sc != http.StatusOK {
+		t.Errorf("wrong status code for product found. Expected: %d, got: %d", http.StatusOK, sc)
+	}
+
+	defer resp.Body.Close()
+
+	var p model.Product
+	if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
+		t.Fatal(err)
+	}
+
+	if p.ID != prod.ID {
+		t.Errorf("wrong product ID. Expected: %s, got: %s", prod.ID, p.ID)
+	}
+
+	if p.Name != prod.Name {
+		t.Errorf("wrong product name. Expected: %s, got: %s", prod.Name, p.Name)
+	}
+
+	if p.SellerID != prod.SellerID {
+		t.Errorf("wrong seller ID. Expected: %s, got: %s", prod.SellerID, p.SellerID)
+	}
+
+	if p.AmountAvailable != prod.AmountAvailable {
+		t.Errorf("wrong amount available. Expected: %d, got: %d", prod.AmountAvailable, p.AmountAvailable)
+	}
+
+	if p.Cost != prod.Cost {
+		t.Errorf("wrong cost. Expected: %d, got: %d", prod.Cost, p.Cost)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}

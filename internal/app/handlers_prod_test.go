@@ -313,3 +313,81 @@ func TestHandleListProductsSuccessMany(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestHandleProductDetailsFailNoProdInCtx(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/product/1234", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	NewApp("", nil).handleProductDetails().ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+
+	if sc != http.StatusNotFound {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusNotFound, sc)
+	}
+}
+
+func TestHandleProductDetailsSuccess(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/product/1234", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	prod := model.Product{
+		ID:              "1234",
+		Name:            "Prod 1234",
+		AmountAvailable: 10,
+		Cost:            5,
+		SellerID:        "Seller 1",
+	}
+
+	ctx := context.WithValue(r.Context(), productContextKey, &prod)
+
+	NewApp("", nil).handleProductDetails().ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+	sc := resp.StatusCode
+
+	if sc != http.StatusOK {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusOK, sc)
+	}
+
+	ct := resp.Header.Get("Content-Type")
+
+	if ct != "application/json" {
+		t.Errorf("wrong content-type. expected: %s, got: %s", "application/json", ct)
+	}
+
+	defer resp.Body.Close()
+
+	var p model.Product
+	if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
+		t.Fatal(err)
+	}
+
+	if p.ID != prod.ID {
+		t.Errorf("wrong product ID. Expected: %s, got: %s", prod.ID, p.ID)
+	}
+
+	if p.Name != prod.Name {
+		t.Errorf("wrong product name. Expected: %s, got: %s", prod.Name, p.Name)
+	}
+
+	if p.SellerID != prod.SellerID {
+		t.Errorf("wrong seller ID. Expected: %s, got: %s", prod.SellerID, p.SellerID)
+	}
+
+	if p.AmountAvailable != prod.AmountAvailable {
+		t.Errorf("wrong amount available. Expected: %d, got: %d", prod.AmountAvailable, p.AmountAvailable)
+	}
+
+	if p.Cost != prod.Cost {
+		t.Errorf("wrong cost. Expected: %d, got: %d", prod.Cost, p.Cost)
+	}
+}

@@ -30,7 +30,7 @@ func (a *app) CreateUser(ctx context.Context, username, password string, deposit
 
 	encPasswd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if err != nil {
-		return err
+		return
 	}
 
 	if a.Db == nil {

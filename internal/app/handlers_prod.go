@@ -97,6 +97,20 @@ func (a *app) handleDeleteProduct() http.HandlerFunc {
 func (a *app) handleProductDetails() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		prod, ok := r.Context().Value(productContextKey).(*model.Product)
+		if !ok {
+			fmt.Println("no product in context")
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		if err := json.NewEncoder(w).Encode(prod); err != nil {
+			fmt.Println("error encoding product", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

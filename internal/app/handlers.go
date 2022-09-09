@@ -95,7 +95,6 @@ func (a *app) handleLogin() http.HandlerFunc {
 			return
 		}
 
-		// TODO fetch use from database and do a proper login
 		tokenString, err := a.getEncTokenString(usr.ID, usr.Username)
 		if err != nil {
 			fmt.Printf("Error signing token: %s\n", err.Error())
@@ -113,19 +112,21 @@ const (
 	jwtUserIdKey   = "userID"
 )
 
-// TODO remove role and use userID and username
-func (a *app) getEncTokenString(userID, username string) (string, error) {
+func (a *app) getEncTokenString(userID, username string) (tokenString string, err error) {
 	t := jwt.New()
 	t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
 	t.Set(jwt.NotBeforeKey, time.Now())
 	t.Set(jwtUserIdKey, userID)
 	t.Set(jwtUsernameKey, username)
 
-	claims, _ := t.AsMap(context.Background())
+	claims, err := t.AsMap(context.Background())
+	if err != nil {
+		return
+	}
 
-	_, tokenString, err := a.JwtAuth.Encode(claims)
+	_, tokenString, err = a.JwtAuth.Encode(claims)
 
-	return tokenString, err
+	return
 
 }
 
