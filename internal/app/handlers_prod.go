@@ -94,6 +94,14 @@ func (a *app) handleDeleteProduct() http.HandlerFunc {
 	}
 }
 
+// @Summary 	Product details
+// @Description Show details for the product ID in the path
+// @Tags		public, product
+// @Param 		productID path string true "Product ID"
+// @Success		200 {object} model.Product
+// @Failure		404 {string} string "product not found"
+// @Failure		500 {string} string "error encofing data"
+// @Router 		/product/{productID} [get]
 func (a *app) handleProductDetails() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -114,6 +122,12 @@ func (a *app) handleProductDetails() http.HandlerFunc {
 	}
 }
 
+// @Summary 	Products list
+// @Description List all products in the database
+// @Tags		public, product
+// @Success		200 {object} []model.Product
+// @Failure		500 {string} string "error encofing data"
+// @Router 		/product/list [get]
 func (a *app) handleListProducts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

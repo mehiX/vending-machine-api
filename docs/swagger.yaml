@@ -35,6 +35,19 @@ definitions:
       username:
         type: string
     type: object
+  model.Product:
+    properties:
+      amount_available:
+        type: integer
+      cost:
+        type: integer
+      id:
+        type: string
+      name:
+        type: string
+      seller_id:
+        type: string
+    type: object
 info:
   contact: {}
   title: Vending Machine API
@@ -141,6 +154,49 @@ paths:
       - private
       - product
       - only sellers
+    get:
+      description: Show details for the product ID in the path
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Product'
+        "404":
+          description: product not found
+          schema:
+            type: string
+        "500":
+          description: error encofing data
+          schema:
+            type: string
+      summary: Product details
+      tags:
+      - public
+      - product
+  /product/list:
+    get:
+      description: List all products in the database
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Product'
+            type: array
+        "500":
+          description: error encofing data
+          schema:
+            type: string
+      summary: Products list
+      tags:
+      - public
+      - product
   /user:
     get:
       description: Fetches data from the auth token and returns it as a json object
