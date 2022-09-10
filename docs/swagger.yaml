@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   app.addUserRequest:
     properties:
@@ -35,6 +36,13 @@ definitions:
       username:
         type: string
     type: object
+  app.updateProductRequest:
+    properties:
+      cost:
+        type: integer
+      name:
+        type: string
+    type: object
   model.Product:
     properties:
       amount_available:
@@ -48,17 +56,72 @@ definitions:
       seller_id:
         type: string
     type: object
+  model.User:
+    properties:
+      deposit:
+        type: integer
+      id:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:7777
 info:
-  contact: {}
+  contact:
+    email: mihai@devops-experts.me
+    name: Mihai O.
+  description: API for a vending machine, allowing users with a “seller” role to add,
+    update or remove products, while users with a “buyer” role can deposit coins into
+    the machine and make purchases
   title: Vending Machine API
   version: "1.0"
 paths:
+  /deposit/{coin}:
+    post:
+      description: Deposit 1 coin at a time
+      parameters:
+      - description: Coin value
+        enum:
+        - 5
+        - 10
+        - 20
+        - 50
+        - 100
+        in: path
+        name: coin
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: user with updated deposit
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: deposit not updated
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Deposit coins
+      tags:
+      - private
+      - only buyers
   /health:
     get:
       description: Validate the application is running
       responses:
         "200":
           description: OK
+          schema:
+            type: string
+        "424":
+          description: No DB
           schema:
             type: string
       summary: Health endpoing
@@ -119,6 +182,39 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Create a product
+      tags:
+      - private
+      - product
+      - only sellers
+    put:
+      consumes:
+      - application/json
+      description: Update name and/or cost for a product
+      parameters:
+      - description: product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/app.updateProductRequest'
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "500":
+          description: product not updated
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a product
       tags:
       - private
       - product
@@ -197,6 +293,24 @@ paths:
       tags:
       - public
       - product
+  /reset:
+    post:
+      description: Resets a buyer's deposit to 0
+      responses:
+        "200":
+          description: user with reset deposit
+          schema:
+            $ref: '#/definitions/model.User'
+        "500":
+          description: reset error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Reset deposit
+      tags:
+      - private
+      - only buyers
   /user:
     get:
       description: Fetches data from the auth token and returns it as a json object
@@ -243,6 +357,8 @@ paths:
       summary: Add a new user
       tags:
       - public
+schemes:
+- http
 securityDefinitions:
   ApiKeyAuth:
     in: header

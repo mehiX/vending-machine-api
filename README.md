@@ -9,7 +9,7 @@
 
 - Go >= 1.19
 
-## Setup
+## Setup and dependencies
 
 ```
 cp .env.tmpl .env
@@ -17,12 +17,17 @@ cp .env.tmpl .env
 
 Edit the values in `.env` to match your environment.
 
+```
+# install go-swagger cli
+go install github.com/swaggo/swag/cmd/swag@v1.8.3
+
+# generate swagger docs
+go generate ./...
+```
+
 ## Run 
 
 ```
-# generate up-to-date Swagger documentation
-swag init -d "./cmd/server" --parseDependency --parseInternal --parseDepth 1
-
 # check available command line options (provided defaults should work)
 go run ./cmd/server/... -h
 

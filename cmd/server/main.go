@@ -1,3 +1,4 @@
+//go:generate swag init -d "." -o "../../docs" --parseDependency --parseInternal --parseDepth 1
 package main
 
 import (
@@ -26,19 +27,20 @@ func init() {
 	}
 }
 
-// @title 			Vending Machine API
-// @description		API for a vending machine, allowing users with a “seller” role to add, update or remove products, while users with a “buyer” role can deposit coins into the machine and make purchases
-// @version 		1.0
+// @title  Vending Machine API
+// @description API for a vending machine, allowing users with a “seller” role to add, update or remove products, while users with a “buyer” role can deposit coins into the machine and make purchases
+// @version 1.0
 
-// @contact.name	Mihai O.
-// @contact.email	mihai@devops-experts.me
+// @contact.name Mihai O.
+// @contact.email mihai@devops-experts.me
 
 // @securitydefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
 
-// @BasePath		/
-// @schemes			http
+// @host localhost:7777
+// @BasePath /
+// @schemes http
 func main() {
 
 	vm := app.NewApp(addr, nil)

@@ -114,6 +114,14 @@ func (a *app) handleLogin() http.HandlerFunc {
 	}
 }
 
+// @Summary 	Reset deposit
+// @Description Resets a buyer's deposit to 0
+// @Tags		private, only buyers
+// @Security 	ApiKeyAuth
+// @Produces	application/json
+// @Success		200 {object} model.User "user with reset deposit"
+// @Failure		500 {string} string "reset error"
+// @Router 		/reset [post]
 func (a *app) handleReset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -134,6 +142,16 @@ func (a *app) handleReset() http.HandlerFunc {
 	}
 }
 
+// @Summary 	Deposit coins
+// @Description Deposit 1 coin at a time
+// @Tags		private, only buyers
+// @Security 	ApiKeyAuth
+// @Produces	application/json
+// @Param 		coin path integer true "Coin value" Enums(5,10,20,50,100)
+// @Success		200 {object} model.User "user with updated deposit"
+// @Failure		500 {string} string "deposit not updated"
+// @Failure		400 {string} string "bad request"
+// @Router 		/deposit/{coin} [post]
 func (a *app) handleDeposit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

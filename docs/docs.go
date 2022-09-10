@@ -10,12 +10,66 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "Mihai O.",
+            "email": "mihai@devops-experts.me"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/deposit/{coin}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Deposit 1 coin at a time",
+                "tags": [
+                    "private",
+                    "only buyers"
+                ],
+                "summary": "Deposit coins",
+                "parameters": [
+                    {
+                        "enum": [
+                            5,
+                            10,
+                            20,
+                            50,
+                            100
+                        ],
+                        "type": "integer",
+                        "description": "Coin value",
+                        "name": "coin",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "user with updated deposit",
+                        "schema": {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "deposit not updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Validate the application is running",
@@ -26,6 +80,12 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "424": {
+                        "description": "No DB",
                         "schema": {
                             "type": "string"
                         }
@@ -77,6 +137,57 @@ const docTemplate = `{
             }
         },
         "/product": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Update name and/or cost for a product",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "private",
+                    "product",
+                    "only sellers"
+                ],
+                "summary": "Update a product",
+                "parameters": [
+                    {
+                        "description": "product data",
+                        "name": "product",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app.updateProductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "product not updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -235,6 +346,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/reset": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Resets a buyer's deposit to 0",
+                "tags": [
+                    "private",
+                    "only buyers"
+                ],
+                "summary": "Reset deposit",
+                "responses": {
+                    "200": {
+                        "description": "user with reset deposit",
+                        "schema": {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    },
+                    "500": {
+                        "description": "reset error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/user": {
             "get": {
                 "security": [
@@ -365,6 +505,17 @@ const docTemplate = `{
                 }
             }
         },
+        "app.updateProductRequest": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Product": {
             "type": "object",
             "properties": {
@@ -384,6 +535,23 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "model.User": {
+            "type": "object",
+            "properties": {
+                "deposit": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
         }
     },
     "securityDefinitions": {
@@ -398,11 +566,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "",
-	BasePath:         "",
-	Schemes:          []string{},
+	Host:             "localhost:7777",
+	BasePath:         "/",
+	Schemes:          []string{"http"},
 	Title:            "Vending Machine API",
-	Description:      "",
+	Description:      "API for a vending machine, allowing users with a “seller” role to add, update or remove products, while users with a “buyer” role can deposit coins into the machine and make purchases",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }
