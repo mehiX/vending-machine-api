@@ -49,6 +49,15 @@ func (a *app) SetupRoutes() {
 				r.Delete("/product/{productID:[a-zA-Z0-9-]+}", a.handleDeleteProduct())
 			})
 		})
+		r.Group(func(r chi.Router) {
+			r.Use(a.BuyerCtx)
+			r.Post("/reset", a.handleReset())
+			r.Post("/deposit/{coinValue:(5|10|20|50|100)}", a.handleDeposit())
+			r.Group(func(r chi.Router) {
+				r.Use(a.ProductCtx)
+				r.Get("/buy/product/{productID:[a-zA-Z0-9-]+}/amount/{amount:[0-9]+}", a.handleBuy())
+			})
+		})
 	})
 
 	// public routes
@@ -71,9 +80,15 @@ func (a *app) SetupRoutes() {
 // @Tags		public
 // @Produces	text/plain
 // @Success		200 {string} string "OK"
+// @Success		424 {string} string "No DB"
 // @Router 		/health [get]
 func (a *app) handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("OK"))
+	if a.Db != nil {
+		w.Write([]byte("OK"))
+	} else {
+		w.WriteHeader(http.StatusFailedDependency)
+		w.Write([]byte("NO DB"))
+	}
 }
 
 func (a *app) UserCtx(next http.Handler) http.Handler {
@@ -106,7 +121,21 @@ func (a *app) UserCtx(next http.Handler) http.Handler {
 func (a *app) SellerCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		usr, ok := r.Context().Value(userContextKey).(*model.User)
-		if !ok || usr.Role != model.ROLE_SELLER {
+		if !ok || !usr.IsSeller() {
+			http.Error(w, "authentication error", http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// BuyerCtx only allows buyer accounts to access successive endpoints
+// Requires a "user" object in current request context
+func (a *app) BuyerCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		usr, ok := r.Context().Value(userContextKey).(*model.User)
+		if !ok || !usr.IsBuyer() {
 			http.Error(w, "authentication error", http.StatusUnauthorized)
 			return
 		}

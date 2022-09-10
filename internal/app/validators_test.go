@@ -1,6 +1,8 @@
 package app
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 )
 
@@ -111,5 +113,42 @@ func TestCostValidate(t *testing.T) {
 		if err := validateCost(c); err == nil {
 			t.Errorf("cost should be rejected: %d", c)
 		}
+	}
+}
+
+func TestValidateDepositCoin(t *testing.T) {
+
+	errNotAccepted := errors.New("accepted values: [5, 10. 20, 50, 100]")
+
+	type scenario struct {
+		input  int
+		result error
+	}
+
+	scenarios := []scenario{
+		{0, errNotAccepted},
+		{-2, errNotAccepted},
+		{3, errNotAccepted},
+		{102, errNotAccepted},
+		{25, errNotAccepted},
+		{5, nil},
+		{10, nil},
+		{20, nil},
+		{50, nil},
+		{100, nil},
+	}
+
+	for _, s := range scenarios {
+		t.Run(fmt.Sprintf("%d", s.input), func(t *testing.T) {
+			t.Parallel()
+			res := validateDepositCoin(s.input)
+			if s.result == nil && res != nil {
+				t.Errorf("coin should be valid: %d", s.input)
+			} else if s.result != nil && res == nil {
+				t.Errorf("coin should not be valid: %d", s.input)
+			} else if s.result != nil && res != nil && s.result.Error() != res.Error() {
+				t.Errorf("wrong error message. expected: %s, got: %s", s.result.Error(), res.Error())
+			}
+		})
 	}
 }

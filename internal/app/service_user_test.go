@@ -21,7 +21,7 @@ func TestFindByCredentialsMissingUsername(t *testing.T) {
 	mock.ExpectQuery(`select * from users`).WillReturnError(errors.New("no rows found"))
 
 	vm := NewApp("", db)
-	u, err := vm.FindByCredentials(context.Background(), "missingusername", "somepassword")
+	u, err := vm.FindUserByCredentials(context.Background(), "missingusername", "somepassword")
 	if err == nil || u != nil {
 		t.Error("expect error for missing username")
 	}
@@ -48,7 +48,7 @@ func TestFindByCredentialsPasswordMissmatch(t *testing.T) {
 		AddRow("id1", testUser, encPasswd, 100, testRole))
 
 	vm := NewApp("", db)
-	u, err := vm.FindByCredentials(context.Background(), testUser, "somepasswordDifferentThanTestPassword")
+	u, err := vm.FindUserByCredentials(context.Background(), testUser, "somepasswordDifferentThanTestPassword")
 	if err == nil || u != nil {
 		t.Error("expect error for wrong password")
 	}

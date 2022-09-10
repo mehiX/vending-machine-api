@@ -73,3 +73,15 @@ func validateCost(c int64) error {
 
 	return nil
 }
+
+var acceptedCoinValues = []int{5, 10, 20, 50, 100}
+
+func validateDepositCoin(v int) error {
+	for _, a := range acceptedCoinValues {
+		if a == v {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("accepted values: %v", acceptedCoinValues)
+}

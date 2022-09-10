@@ -33,14 +33,10 @@ func (a *app) CreateUser(ctx context.Context, username, password string, deposit
 		return
 	}
 
-	if a.Db == nil {
-		return errors.New("no database configured")
-	}
-
 	return a.dbCreateUser(ctx, username, string(encPasswd), deposit, role)
 }
 
-func (a *app) FindByCredentials(ctx context.Context, username, password string) (*model.User, error) {
+func (a *app) FindUserByCredentials(ctx context.Context, username, password string) (*model.User, error) {
 
 	usr, err := a.dbFindUserByUsername(ctx, username)
 	if err != nil {
@@ -54,4 +50,16 @@ func (a *app) FindByCredentials(ctx context.Context, username, password string) 
 	usr.Password = ""
 
 	return usr, nil
+}
+
+func (a *app) FindUserByID(ctx context.Context, id string) (*model.User, error) {
+	return a.dbFindUserByID(ctx, id)
+}
+
+func (a *app) ResetDeposit(ctx context.Context, usr *model.User) error {
+	return a.dbUserUpdateDeposit(ctx, usr.ID, 0)
+}
+
+func (a *app) UserDepositCoin(ctx context.Context, usr *model.User, coin int) error {
+	return a.dbUserUpdateDeposit(ctx, usr.ID, usr.Deposit+int64(coin))
 }

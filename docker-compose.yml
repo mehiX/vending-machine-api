@@ -1,0 +1,34 @@
+version: '3.1'
+
+services:
+
+  vm:
+    image: ghcr.io/mehix/vending-machine-api:main
+    build:
+      context: .
+    depends_on:
+    - db
+    environment:
+    - JWT_ALG
+    - JWT_SIGNKEY
+    - MYSQL_CONN_STR
+    command: "-l :80"
+    ports:
+      - "7777:80"
+
+  db:
+    image: mysql
+    restart: always
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD
+      - MYSQL_USER
+      - MYSQL_PASSWORD
+      - MYSQL_DATABASE
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "7778:8080"

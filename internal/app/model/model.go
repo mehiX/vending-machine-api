@@ -16,6 +16,14 @@ type User struct {
 	Role     TypeRole
 }
 
+func (u *User) IsSeller() bool {
+	return u.Role == ROLE_SELLER
+}
+
+func (u *User) IsBuyer() bool {
+	return u.Role == ROLE_BUYER
+}
+
 type TypeRole = string
 
 const (

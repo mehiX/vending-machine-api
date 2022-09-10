@@ -36,21 +36,15 @@ go run ./cmd/server/... -l 127.0.0.1:9999
 ## Build and run with Docker
 
 ```
-export VERSION=1.4 
-
-docker build -t vending-machine:${VERSION} --build-arg VERSION=${VERSION} .
-
-docker run --rm -d --env-file .env -p 7777:80 vending-machine:${VERSION}
-```
-
-or run by pulling the latest image
-
-```shell
 docker login ghcr.io
 
-docker run --rm -d --env-file .env -p 7777:80 \
-  --pull always \
-  ghcr.io/mehix/vending-machine-api:main
+docker-compose up -d --pull always && docker-compose logs -f vm
+```
+
+To test local changes add the `--build` flag:
+
+```
+docker-compose up -d --build && docker-compose logs -f vm
 ```
 
 ## Generate code coverage report

@@ -20,7 +20,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func TestHealth(t *testing.T) {
+func TestHealthNoDb(t *testing.T) {
 
 	r, err := http.NewRequest(http.MethodGet, "/health", nil)
 	if err != nil {
@@ -29,6 +29,40 @@ func TestHealth(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	NewApp("", nil).Router.ServeHTTP(w, r)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusFailedDependency {
+		t.Errorf("/health. Expected: %d, got: %d", http.StatusFailedDependency, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(b) != "NO DB" {
+		t.Errorf("/health body. Expected: NO DB, got: %s", string(b))
+	}
+}
+
+func TestHealthOK(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "/health", nil)
+	if err != nil {
+		t.Error(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	NewApp("", db).Router.ServeHTTP(w, r)
 
 	resp := w.Result()
 

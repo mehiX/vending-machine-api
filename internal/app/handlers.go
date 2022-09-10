@@ -5,10 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
+)
+
+const (
+	jwtUsernameKey = "username"
+	jwtUserIdKey   = "userID"
 )
 
 // @Summary 	Get information about current user
@@ -89,7 +96,7 @@ func (a *app) handleLogin() http.HandlerFunc {
 			return
 		}
 
-		usr, err := a.FindByCredentials(r.Context(), body.Username, body.Password)
+		usr, err := a.FindUserByCredentials(r.Context(), body.Username, body.Password)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -107,10 +114,77 @@ func (a *app) handleLogin() http.HandlerFunc {
 	}
 }
 
-const (
-	jwtUsernameKey = "username"
-	jwtUserIdKey   = "userID"
-)
+func (a *app) handleReset() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
+
+		usr, ok := ctx.Value(userContextKey).(*model.User)
+		if !ok || !usr.IsBuyer() {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		if err := a.ResetDeposit(ctx, usr); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		a.returnUserAsJson(ctx, w, usr.ID)
+	}
+}
+
+func (a *app) handleDeposit() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
+
+		usr, ok := ctx.Value(userContextKey).(*model.User)
+		if !ok || !usr.IsBuyer() {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		coinValue, err := strconv.Atoi(chi.URLParam(r, "coinValue"))
+		if err != nil {
+			http.Error(w, "coin value must be a number", http.StatusBadRequest)
+			return
+		}
+
+		if err := validateDepositCoin(coinValue); err != nil {
+			http.Error(w, "coin value not allowed", http.StatusBadRequest)
+			return
+		}
+
+		if err := a.UserDepositCoin(ctx, usr, coinValue); err != nil {
+			fmt.Println("deposit coin", err)
+			http.Error(w, "deposit faile", http.StatusInternalServerError)
+			return
+		}
+
+		a.returnUserAsJson(ctx, w, usr.ID)
+	}
+}
+
+func (a *app) handleBuy() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {}
+}
+
+func (a *app) returnUserAsJson(ctx context.Context, w http.ResponseWriter, userID string) {
+	buyer, err := a.FindUserByID(ctx, userID)
+	if err != nil {
+		fmt.Println("error find user by id", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(buyer); err != nil {
+		fmt.Println("error encoding user", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+}
 
 func (a *app) getEncTokenString(userID, username string) (tokenString string, err error) {
 	t := jwt.New()

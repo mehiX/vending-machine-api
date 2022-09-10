@@ -41,7 +41,9 @@ func init() {
 // @schemes			http
 func main() {
 
-	srvr := app.NewApp(addr, nil).HttpServer()
+	vm := app.NewApp(addr, nil)
+
+	srvr := vm.HttpServer()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
@@ -57,9 +59,16 @@ func main() {
 		}
 	}()
 
+	done, stopDB := context.WithCancel(context.Background())
+	go vm.ConnectDB(done)
+
 	<-c
 	fmt.Println("Shutting down...")
 
+	// disconnect the database
+	stopDB()
+
+	// shutdown http server
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

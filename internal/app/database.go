@@ -2,15 +2,81 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+// ConnectDB tries to establish a database connection.
+// Retries periodically to check that the connection is still available.
+// Should be run in a separate goroutine.
+func (a *app) ConnectDB(done context.Context) {
+
+	test := func(db *sql.DB) error {
+		ctx, cancel := context.WithTimeout(done, 2*time.Second)
+		defer cancel()
+		return db.PingContext(ctx)
+	}
+
+	// don't fill the logs if connection is OK
+	var printConnOK bool = true
+
+	tkr := time.NewTicker(5 * time.Second)
+	for {
+		select {
+		case <-done.Done():
+			if a.Db != nil {
+				a.Db.Close()
+			}
+			fmt.Println("DB connection closed")
+			return
+		case <-tkr.C:
+			if a.Db == nil {
+				// try to connect
+				fmt.Println("DB: connecting...")
+				db, err := sql.Open("mysql", os.Getenv("MYSQL_CONN_STR"))
+				if err != nil {
+					fmt.Printf("DB: %v\n", err.Error())
+				} else {
+					db.SetConnMaxLifetime(0)
+					db.SetMaxIdleConns(50)
+					db.SetMaxOpenConns(50)
+
+					if err := test(db); err == nil {
+						a.Db = db
+					}
+				}
+			} else {
+				// check if server still available
+				if err := test(a.Db); err != nil {
+					fmt.Printf("DB: Ping %v\n", err.Error())
+					a.Db = nil
+					printConnOK = true
+				} else {
+					if printConnOK {
+						fmt.Println("DB: connection OK")
+						printConnOK = false
+					}
+				}
+			}
+		}
+	}
+}
 
 // dbCreateUser receives sanitized data and tries to create a new database record
 func (a *app) dbCreateUser(ctx context.Context, username, encPasswd string, deposit int64, role string) (err error) {
+
+	if a.Db == nil {
+		return errors.New("no database configured")
+	}
+
 	tx, err := a.Db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -51,7 +117,7 @@ func (a *app) dbCreateProduct(ctx context.Context, sellerID string, amountAvaila
 		}
 	}()
 
-	qryProd := "insert into products (id, name, amountAvailable, cost, seller_id) values (?, ?, ?, ?, ?)"
+	qryProd := "insert into products (id, name, available_amount, cost, seller_id) values (?, ?, ?, ?, ?)"
 
 	_, err = tx.ExecContext(ctx, qryProd, uuid.New().String(), name, amountAvailable, cost, sellerID)
 	if err != nil {
@@ -63,6 +129,10 @@ func (a *app) dbCreateProduct(ctx context.Context, sellerID string, amountAvaila
 }
 
 func (a *app) dbFindUserByID(ctx context.Context, userID string) (*model.User, error) {
+
+	if a.Db == nil {
+		return nil, errors.New("no database configured")
+	}
 
 	conn, err := a.Db.Conn(ctx)
 	if err != nil {
@@ -200,4 +270,32 @@ func (a *app) dbUpdateProduct(ctx context.Context, p model.Product) (err error) 
 	_, err = tx.ExecContext(ctx, qryUpdProd, p.Name, p.Cost, p.ID, p.SellerID)
 
 	return
+}
+
+func (a *app) dbUserUpdateDeposit(ctx context.Context, userID string, newDeposit int64) (err error) {
+
+	if a.Db == nil {
+		return errors.New("no database configured")
+	}
+
+	tx, err := a.Db.BeginTx(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	qryUpdateDeposit := `update users set deposit=? where id=?`
+
+	_, err = tx.ExecContext(ctx, qryUpdateDeposit, newDeposit, userID)
+
+	return
+
 }
