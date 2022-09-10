@@ -32,7 +32,7 @@ func TestCreateUserShouldSucceed(t *testing.T) {
 	}
 }
 
-func TestCreateUserShouldRollbackOnError(t *testing.T) {
+func TestDbCreateUserShouldRollbackOnError(t *testing.T) {
 
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -54,7 +54,7 @@ func TestCreateUserShouldRollbackOnError(t *testing.T) {
 	}
 }
 
-func TestFindUserByUsernameSuccess(t *testing.T) {
+func TestDbFindUserByUsernameSuccess(t *testing.T) {
 
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -99,7 +99,7 @@ func TestFindUserByUsernameSuccess(t *testing.T) {
 	}
 }
 
-func TestFindUserByUsernameNoMatch(t *testing.T) {
+func TestDbFindUserByUsernameNoMatch(t *testing.T) {
 
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -121,7 +121,7 @@ func TestFindUserByUsernameNoMatch(t *testing.T) {
 	}
 }
 
-func TestFindUserByIDSuccess(t *testing.T) {
+func TestDbFindUserByIDSuccess(t *testing.T) {
 
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -166,7 +166,7 @@ func TestFindUserByIDSuccess(t *testing.T) {
 	}
 }
 
-func TestFindUserByIDNoMatch(t *testing.T) {
+func TestDbFindUserByIDNoMatch(t *testing.T) {
 
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -188,17 +188,37 @@ func TestFindUserByIDNoMatch(t *testing.T) {
 	}
 }
 
+func TestDbCreateUserNoDb(t *testing.T) {
+
+	errMsg := "no database configured"
+
+	if err := NewApp("", nil).dbCreateUser(context.Background(), "", "", 10, ""); err == nil {
+		t.Fatal("should fail if DB cannot open a TX")
+	} else {
+		if err.Error() != errMsg {
+			t.Fatalf("wrong error message. expected: %s, got: %s", errMsg, err.Error())
+		}
+	}
+}
+
 func TestDbCreateUserCannotStartTx(t *testing.T) {
+
+	errMsg := "cannot open tx"
+
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer db.Close()
 
-	mock.ExpectBegin().WillReturnError(errors.New("cannot open tx"))
+	mock.ExpectBegin().WillReturnError(errors.New(errMsg))
 
 	if err := NewApp("", db).dbCreateUser(context.Background(), "", "", 10, ""); err == nil {
 		t.Fatal("should fail if DB cannot open a TX")
+	} else {
+		if err.Error() != errMsg {
+			t.Fatalf("wrong error message. expected: %s, got: %s", errMsg, err.Error())
+		}
 	}
 }
 
@@ -431,4 +451,88 @@ func TestDbUpdateProductFailSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 
+}
+
+func TestDbUserUpdateDepositFailNoDb(t *testing.T) {
+	if err := NewApp("", nil).dbUserUpdateDeposit(context.Background(), "", 0); err == nil {
+		t.Fatal("should fail if no database connection")
+	} else {
+		errMsg := "no database configured"
+		if err.Error() != errMsg {
+			t.Fatalf("wrong error message. expected: %s, got: %s", errMsg, err.Error())
+		}
+	}
+}
+
+func TestDbUserUpdateDepositFailNoTx(t *testing.T) {
+
+	errMsg := "no tx"
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin().WillReturnError(errors.New(errMsg))
+
+	if err := NewApp("", db).dbUserUpdateDeposit(context.Background(), "", 0); err == nil {
+		t.Fatal("should fail if couldn't open a transaction")
+	} else {
+		if err.Error() != errMsg {
+			t.Fatalf("wrong error message. expected: %s, got: %s", errMsg, err.Error())
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDbUserUpdateDepositFailQueryError(t *testing.T) {
+
+	errMsg := "update error"
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update users set deposit=\? where id=\?`).WithArgs(10, "userid").WillReturnError(errors.New(errMsg))
+	mock.ExpectRollback()
+
+	if err := NewApp("", db).dbUserUpdateDeposit(context.Background(), "userid", 10); err == nil {
+		t.Fatal("should fail if update failed")
+	} else {
+		if err.Error() != errMsg {
+			t.Fatalf("wrong error message. expected: %s, got: %s", errMsg, err.Error())
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDbUserUpdateDepositSuccess(t *testing.T) {
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update users set deposit=\? where id=\?`).WithArgs(10, "userid").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	if err := NewApp("", db).dbUserUpdateDeposit(context.Background(), "userid", 10); err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
 }

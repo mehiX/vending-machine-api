@@ -134,7 +134,8 @@ func (a *app) handleReset() http.HandlerFunc {
 		}
 
 		if err := a.ResetDeposit(ctx, usr); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			fmt.Println("resetDeposit error", err)
+			http.Error(w, "reset failed", http.StatusInternalServerError)
 			return
 		}
 

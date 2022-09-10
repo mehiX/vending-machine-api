@@ -62,7 +62,7 @@ func main() {
 	}()
 
 	done, stopDB := context.WithCancel(context.Background())
-	go vm.ConnectDB(done)
+	go vm.ConnectDB(done, os.Getenv("MYSQL_CONN_STR"), 5*time.Second)
 
 	<-c
 	fmt.Println("Shutting down...")

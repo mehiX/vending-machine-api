@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,7 +16,7 @@ import (
 // ConnectDB tries to establish a database connection.
 // Retries periodically to check that the connection is still available.
 // Should be run in a separate goroutine.
-func (a *app) ConnectDB(done context.Context) {
+func (a *app) ConnectDB(done context.Context, connStr string, pingDelay time.Duration) {
 
 	test := func(db *sql.DB) error {
 		ctx, cancel := context.WithTimeout(done, 2*time.Second)
@@ -28,7 +27,7 @@ func (a *app) ConnectDB(done context.Context) {
 	// don't fill the logs if connection is OK
 	var printConnOK bool = true
 
-	tkr := time.NewTicker(5 * time.Second)
+	tkr := time.NewTicker(pingDelay)
 	for {
 		select {
 		case <-done.Done():
@@ -41,7 +40,7 @@ func (a *app) ConnectDB(done context.Context) {
 			if a.Db == nil {
 				// try to connect
 				fmt.Println("DB: connecting...")
-				db, err := sql.Open("mysql", os.Getenv("MYSQL_CONN_STR"))
+				db, err := sql.Open("mysql", connStr)
 				if err != nil {
 					fmt.Printf("DB: %v\n", err.Error())
 				} else {

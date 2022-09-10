@@ -55,7 +55,7 @@ func (a *app) SetupRoutes() {
 			r.Post("/deposit/{coinValue:(5|10|20|50|100)}", a.handleDeposit())
 			r.Group(func(r chi.Router) {
 				r.Use(a.ProductCtx)
-				r.Get("/buy/product/{productID:[a-zA-Z0-9-]+}/amount/{amount:[0-9]+}", a.handleBuy())
+				r.Get("/buy/product/{productID:[a-zA-Z0-9-]+}/amount/{amount:[1-9]{1}[0-9]+}", a.handleBuy())
 			})
 		})
 	})
