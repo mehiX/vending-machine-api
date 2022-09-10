@@ -309,3 +309,163 @@ func TestHandleResetSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestReturnUserAsJsonFailBadUserId(t *testing.T) {
+
+	w := httptest.NewRecorder()
+	NewApp("", nil).returnUserAsJson(context.Background(), w, "")
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusInternalServerError, resp.StatusCode)
+	}
+}
+
+func TestHandleDepositFailNoUserInContext(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	NewApp("", nil).handleDeposit().ServeHTTP(w, r)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusUnauthorized, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt := strings.TrimSpace(string(b))
+
+	if txt != http.StatusText(http.StatusUnauthorized) {
+		t.Fatalf("wrong error message. expected: %s, got: %s", http.StatusText(http.StatusUnauthorized), txt)
+	}
+}
+
+func TestHandleDepositFailNoCoinValueInContext(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_BUYER})
+
+	NewApp("", nil).handleDeposit().ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusBadRequest, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt := strings.TrimSpace(string(b))
+
+	if txt != "missing coin value" {
+		t.Fatalf("wrong error message. expected: %s, got: %s", "missing coin value", txt)
+	}
+}
+
+func TestHandleDepositFailDbError(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodGet, "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_BUYER})
+	var val int = 10
+	ctx = context.WithValue(ctx, coinValueContextKey, &val)
+
+	NewApp("", nil).handleDeposit().ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusInternalServerError, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt := strings.TrimSpace(string(b))
+
+	if txt != "deposit failed" {
+		t.Fatalf("wrong error message. expected: %s, got: %s", "deposit failed", txt)
+	}
+}
+
+func TestHandleDepositSuccess(t *testing.T) {
+
+	usr := model.User{
+		ID:      "userid",
+		Role:    model.ROLE_BUYER,
+		Deposit: 100,
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update users set deposit=\? where id=\?`).WithArgs(110, "userid").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	columns := []string{"id", "username", "password", "deposit", "role"}
+
+	mock.ExpectQuery(`select .* from users where id=\?`).WithArgs("userid").WillReturnRows(sqlmock.NewRows(columns).AddRow("userid", "", "", 110, "BUYER"))
+
+	r, err := http.NewRequest(http.MethodGet, "", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &usr)
+	var val int = 10
+	ctx = context.WithValue(ctx, coinValueContextKey, &val)
+
+	NewApp("", db).handleDeposit().ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusOK, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&usr); err != nil {
+		t.Fatal(err)
+	}
+
+	if usr.Deposit != 110 {
+		t.Fatalf("wrong deposit in response. expected: %d, got: %d", 110, usr.Deposit)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/mehiX/vending-machine-api/internal/app/model"
 	"golang.org/x/crypto/bcrypt"
@@ -61,5 +62,15 @@ func (a *app) ResetDeposit(ctx context.Context, usr *model.User) error {
 }
 
 func (a *app) UserDepositCoin(ctx context.Context, usr *model.User, coin int) error {
-	return a.dbUserUpdateDeposit(ctx, usr.ID, usr.Deposit+int64(coin))
+
+	if err := validateDepositCoin(coin); err != nil {
+		return errors.New("coin value not allowed")
+	}
+
+	if err := a.dbUserUpdateDeposit(ctx, usr.ID, usr.Deposit+int64(coin)); err != nil {
+		fmt.Println("deposit error", err)
+		return errors.New("deposit failed")
+	}
+
+	return nil
 }

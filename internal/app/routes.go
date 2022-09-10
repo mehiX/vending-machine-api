@@ -2,7 +2,9 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -19,8 +21,9 @@ type contextKey struct {
 }
 
 var (
-	userContextKey    = &contextKey{"user"}    // holds a reference to the current user
-	productContextKey = &contextKey{"product"} // holds a reference to the current product (based on the productID in path)
+	userContextKey      = &contextKey{"user"}    // holds a reference to the current user
+	productContextKey   = &contextKey{"product"} // holds a reference to the current product (based on the productID in path)
+	coinValueContextKey = &contextKey{"coinValue"}
 )
 
 func (a *app) SetupRoutes() {
@@ -140,7 +143,15 @@ func (a *app) BuyerCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		coinValue, err := strconv.Atoi(chi.URLParam(r, "coinValue"))
+		if err != nil {
+			fmt.Println("coin value must be a number")
+			next.ServeHTTP(w, r)
+		} else {
+			ctx := context.WithValue(r.Context(), coinValueContextKey, &coinValue)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+
 	})
 }
 

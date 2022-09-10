@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
 )
@@ -164,20 +162,15 @@ func (a *app) handleDeposit() http.HandlerFunc {
 			return
 		}
 
-		coinValue, err := strconv.Atoi(chi.URLParam(r, "coinValue"))
-		if err != nil {
-			http.Error(w, "coin value must be a number", http.StatusBadRequest)
+		coinValue, ok := ctx.Value(coinValueContextKey).(*int)
+		if !ok {
+			http.Error(w, "missing coin value", http.StatusBadRequest)
 			return
 		}
 
-		if err := validateDepositCoin(coinValue); err != nil {
-			http.Error(w, "coin value not allowed", http.StatusBadRequest)
-			return
-		}
-
-		if err := a.UserDepositCoin(ctx, usr, coinValue); err != nil {
+		if err := a.UserDepositCoin(ctx, usr, *coinValue); err != nil {
 			fmt.Println("deposit coin", err)
-			http.Error(w, "deposit faile", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
