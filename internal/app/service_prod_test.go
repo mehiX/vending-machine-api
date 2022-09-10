@@ -193,6 +193,40 @@ func TestDeleteProductSuccess(t *testing.T) {
 	}
 }
 
+func TestUpdateProductFailNilUser(t *testing.T) {
+
+	if err := NewApp("", nil).UpdateProduct(context.Background(), nil, &model.Product{SellerID: "sellerid"}, "good name", 10); err == nil {
+		t.Fatal("should return error if user nil")
+	} else {
+		if err.Error() != "seller and product must exist" {
+			t.Errorf("wrong error. expected: %s, got: %s", "seller and product must exist", err.Error())
+		}
+	}
+}
+
+func TestUpdateProductFailNilProduct(t *testing.T) {
+
+	if err := NewApp("", nil).UpdateProduct(context.Background(), &model.User{}, nil, "good name", 10); err == nil {
+		t.Fatal("should return error if product nil")
+	} else {
+		if err.Error() != "seller and product must exist" {
+			t.Errorf("wrong error. expected: %s, got: %s", "seller and product must exist", err.Error())
+		}
+	}
+}
+
+func TestUpdateProductFailNotOwnProduct(t *testing.T) {
+
+	if err := NewApp("", nil).UpdateProduct(context.Background(), &model.User{ID: "sellerid"}, &model.Product{SellerID: "other sellerid"}, "good name", 10); err == nil {
+		t.Fatal("should return error if not own product")
+	} else {
+		if err.Error() != "seller can only modify own products" {
+			t.Errorf("wrong error. expected: %s, got: %s", "seller can only modify own products", err.Error())
+		}
+	}
+
+}
+
 func TestUpdateProductFailNoDb(t *testing.T) {
 
 	if err := NewApp("", nil).UpdateProduct(context.Background(), &model.User{ID: "sellerid"}, &model.Product{SellerID: "sellerid"}, "good name", 10); err == nil {
