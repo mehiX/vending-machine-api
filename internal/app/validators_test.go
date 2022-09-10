@@ -118,7 +118,7 @@ func TestCostValidate(t *testing.T) {
 
 func TestValidateDepositCoin(t *testing.T) {
 
-	errNotAccepted := errors.New("accepted values: [5, 10. 20, 50, 100]")
+	errNotAccepted := errors.New("accepted values: [5 10 20 50 100]")
 
 	type scenario struct {
 		input  int
@@ -140,7 +140,6 @@ func TestValidateDepositCoin(t *testing.T) {
 
 	for _, s := range scenarios {
 		t.Run(fmt.Sprintf("%d", s.input), func(t *testing.T) {
-			t.Parallel()
 			res := validateDepositCoin(s.input)
 			if s.result == nil && res != nil {
 				t.Errorf("coin should be valid: %d", s.input)
