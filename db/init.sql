@@ -19,3 +19,11 @@ create table products (
 ALTER TABLE products
 ADD CONSTRAINT FK_seller
 FOREIGN KEY (seller_id) REFERENCES users(id); 
+
+ALTER TABLE products
+ADD CONSTRAINT UK_name
+UNIQUE (name); 
+
+ALTER TABLE users
+ADD CONSTRAINT UK_username
+UNIQUE (username);

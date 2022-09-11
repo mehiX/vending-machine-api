@@ -57,12 +57,13 @@ func (a *App) handleCreateProduct() http.HandlerFunc {
 // @Tags		private, product, only sellers
 // @Security 	ApiKeyAuth
 // @Accept		application/json
+// @Param 		productID path string true "Product ID"
 // @Param 		product body updateProductRequest true "product data"
 // @Success		204
 // @Failure		500 {string} string "product not updated"
 // @Failure		400 {string} string "bad request"
 // @Failure		401 {string} string "unauthorized"
-// @Router 		/product [put]
+// @Router 		/product/{productID} [put]
 //
 // handleUpdateProduct receives updates to a product's data and applies them in the database
 // Only `name` and `cost` can be updated.
@@ -145,7 +146,7 @@ func (a *App) handleDeleteProduct() http.HandlerFunc {
 // @Success		200 {object} model.Product
 // @Failure		404 {string} string "product not found"
 // @Failure		500 {string} string "error encofing data"
-// @Router 		/product/{productID} [get]
+// @Router 		/products/{productID} [get]
 func (a *App) handleProductDetails() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -165,7 +166,7 @@ func (a *App) handleProductDetails() http.HandlerFunc {
 // @Tags		public, product
 // @Success		200 {object} []model.Product
 // @Failure		500 {string} string "error encofing data"
-// @Router 		/product/list [get]
+// @Router 		/products/list [get]
 func (a *App) handleListProducts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 

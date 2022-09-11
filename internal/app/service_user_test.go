@@ -66,45 +66,38 @@ func TestCreateUserSuccess(t *testing.T) {
 	testPassword := "ui&*789SDJA87&"
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`insert into users`).WithArgs(sqlmock.AnyArg(), "goodusername", sqlmock.AnyArg(), 100, model.ROLE_ADMIN).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`insert into users`).WithArgs(sqlmock.AnyArg(), "goodusername", sqlmock.AnyArg(), model.ROLE_ADMIN).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	if err := NewApp("", db).CreateUser(context.Background(), "goodusername", testPassword, 100, model.ROLE_ADMIN); err != nil {
+	if err := NewApp("", db).CreateUser(context.Background(), "goodusername", testPassword, model.ROLE_ADMIN); err != nil {
 		t.Errorf("unexpected error when creating a user: %s", err)
 	}
 
 }
 func TestCreateUserFailOnValidateUsername(t *testing.T) {
 
-	if err := NewApp("", nil).CreateUser(context.Background(), "short", "", 100, model.ROLE_ADMIN); err == nil {
+	if err := NewApp("", nil).CreateUser(context.Background(), "short", "", model.ROLE_ADMIN); err == nil {
 		t.Error("expect to return error for invalid username")
 	}
 }
 
 func TestCreateUserFailOnValidatePassword(t *testing.T) {
 
-	if err := NewApp("", nil).CreateUser(context.Background(), "goodusername", "wrong", 100, model.ROLE_ADMIN); err == nil {
+	if err := NewApp("", nil).CreateUser(context.Background(), "goodusername", "wrong", model.ROLE_ADMIN); err == nil {
 		t.Error("expect to return error for invalid password")
-	}
-}
-
-func TestCreateUserFailOnValidateDeposit(t *testing.T) {
-
-	if err := NewApp("", nil).CreateUser(context.Background(), "goodusername", "ui&*789SDJA87&", 101, model.ROLE_ADMIN); err == nil {
-		t.Error("expect to return error for invalid deposit")
 	}
 }
 
 func TestCreateUserFailOnValidateRole(t *testing.T) {
 
-	if err := NewApp("", nil).CreateUser(context.Background(), "goodusername", "ui&*789SDJA87&", 100, model.TypeRole("anything")); err == nil {
+	if err := NewApp("", nil).CreateUser(context.Background(), "goodusername", "ui&*789SDJA87&", model.TypeRole("anything")); err == nil {
 		t.Error("expect to return error for invalid role")
 	}
 }
 
 func TestCreateUserFailOnNoDatabase(t *testing.T) {
 
-	if err := NewApp("", nil).CreateUser(context.Background(), "goodusername", "ui&*789SDJA87&", 100, model.ROLE_ADMIN); err == nil {
+	if err := NewApp("", nil).CreateUser(context.Background(), "goodusername", "ui&*789SDJA87&", model.ROLE_ADMIN); err == nil {
 		t.Error("expect to return error if no database defined")
 	}
 }

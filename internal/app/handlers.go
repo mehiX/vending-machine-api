@@ -59,7 +59,7 @@ func (a *App) handleAddUser() http.HandlerFunc {
 			return
 		}
 
-		if err := a.CreateUser(r.Context(), data.Username, data.Password, data.Deposit, data.Role); err != nil {
+		if err := a.CreateUser(r.Context(), data.Username, data.Password, data.Role); err != nil {
 			fmt.Println("createUser error", err)
 			http.Error(w, "user not created", http.StatusInternalServerError)
 			return
@@ -285,7 +285,6 @@ type currentUserResponse struct {
 type addUserRequest struct {
 	Username string
 	Password string
-	Deposit  int64
 	Role     model.TypeRole
 }
 

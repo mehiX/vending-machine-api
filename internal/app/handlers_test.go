@@ -44,7 +44,6 @@ func TestHandleAddUserFailDataError(t *testing.T) {
 	data := addUserRequest{
 		Username: "short",
 		Password: "lasdjfasdf",
-		Deposit:  100,
 		Role:     model.ROLE_ADMIN,
 	}
 	if err := json.NewEncoder(&buf).Encode(data); err != nil {
@@ -81,7 +80,6 @@ func TestHandleAddUserSuccess(t *testing.T) {
 	data := addUserRequest{
 		Username: "mihaiusr",
 		Password: "la&*jfaS2f",
-		Deposit:  100,
 		Role:     model.ROLE_ADMIN,
 	}
 	if err := json.NewEncoder(&buf).Encode(data); err != nil {
@@ -101,7 +99,7 @@ func TestHandleAddUserSuccess(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`insert into users`).WithArgs(sqlmock.AnyArg(), data.Username, sqlmock.AnyArg(), data.Deposit, data.Role).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`insert into users`).WithArgs(sqlmock.AnyArg(), data.Username, sqlmock.AnyArg(), data.Role).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	vm := NewApp("", db)

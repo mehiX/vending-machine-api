@@ -563,7 +563,7 @@ func TestRouteProductDetailsFailMissingProduct(t *testing.T) {
 
 	mock.ExpectQuery(`select .* from products where id=`).WithArgs("product-id-1234").WillReturnError(errors.New("no records found"))
 
-	r, err := http.NewRequest(http.MethodGet, "/product/product-id-1234", nil)
+	r, err := http.NewRequest(http.MethodGet, "/products/product-id-1234", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -605,7 +605,7 @@ func TestRouteProductDetailsSuccess(t *testing.T) {
 	mock.ExpectQuery(`select .* from users where id=\?`).WithArgs(prod.SellerID).WillReturnRows(sqlmock.NewRows(colsUser).
 		AddRow(prod.SellerID, "username", "asdjfdalfj", 100, "SELLER"))
 
-	r, err := http.NewRequest(http.MethodGet, "/product/product-id-1234", nil)
+	r, err := http.NewRequest(http.MethodGet, "/products/product-id-1234", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

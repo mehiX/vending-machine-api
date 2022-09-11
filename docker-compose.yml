@@ -21,6 +21,7 @@ services:
     restart: always
     volumes:
       - ./db:/docker-entrypoint-initdb.d
+      - vmdata:/var/lib/mysql
     environment:
       - MYSQL_RANDOM_ROOT_PASSWORD
       - MYSQL_USER
@@ -32,3 +33,6 @@ services:
     restart: always
     ports:
       - "7778:8080"
+
+volumes:
+  vmdata:

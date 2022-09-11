@@ -19,11 +19,11 @@ func TestCreateUserShouldSucceed(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`insert into users \(id, username, password, deposit, role\) values`).WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`insert into users \(id, username, password, role\) values`).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	vm := NewApp("", db)
-	if err := vm.dbCreateUser(context.Background(), "mihaiuser", "strong23Pass*", 100, model.ROLE_BUYER); err != nil {
+	if err := vm.dbCreateUser(context.Background(), "mihaiuser", "strong23Pass*", model.ROLE_BUYER); err != nil {
 		t.Fatal(err)
 	}
 
@@ -45,7 +45,7 @@ func TestDbCreateUserShouldRollbackOnError(t *testing.T) {
 	mock.ExpectRollback()
 
 	vm := NewApp("", db)
-	if err := vm.dbCreateUser(context.Background(), "mihaiuser", "strong23Pass*", 100, model.ROLE_BUYER); err == nil {
+	if err := vm.dbCreateUser(context.Background(), "mihaiuser", "strong23Pass*", model.ROLE_BUYER); err == nil {
 		t.Fatal(errors.New("database error should be returned by the function"))
 	}
 
@@ -192,7 +192,7 @@ func TestDbCreateUserNoDb(t *testing.T) {
 
 	errMsg := "no database configured"
 
-	if err := NewApp("", nil).dbCreateUser(context.Background(), "", "", 10, ""); err == nil {
+	if err := NewApp("", nil).dbCreateUser(context.Background(), "", "", ""); err == nil {
 		t.Fatal("should fail if DB cannot open a TX")
 	} else {
 		if err.Error() != errMsg {
@@ -213,7 +213,7 @@ func TestDbCreateUserCannotStartTx(t *testing.T) {
 
 	mock.ExpectBegin().WillReturnError(errors.New(errMsg))
 
-	if err := NewApp("", db).dbCreateUser(context.Background(), "", "", 10, ""); err == nil {
+	if err := NewApp("", db).dbCreateUser(context.Background(), "", "", ""); err == nil {
 		t.Fatal("should fail if DB cannot open a TX")
 	} else {
 		if err.Error() != errMsg {

@@ -11,17 +11,13 @@ import (
 
 const password_min_length = 8
 
-func (a *App) CreateUser(ctx context.Context, username, password string, deposit int64, role model.TypeRole) (err error) {
+func (a *App) CreateUser(ctx context.Context, username, password string, role model.TypeRole) (err error) {
 
 	if err = validateUsername(username); err != nil {
 		return
 	}
 
 	if err = validatePassword(password); err != nil {
-		return
-	}
-
-	if err = validateDeposit(deposit); err != nil {
 		return
 	}
 
@@ -34,7 +30,7 @@ func (a *App) CreateUser(ctx context.Context, username, password string, deposit
 		return
 	}
 
-	return a.dbCreateUser(ctx, username, string(encPasswd), deposit, role)
+	return a.dbCreateUser(ctx, username, string(encPasswd), role)
 }
 
 func (a *App) FindUserByCredentials(ctx context.Context, username, password string) (*model.User, error) {

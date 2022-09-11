@@ -12,7 +12,7 @@ import (
 )
 
 // dbCreateUser receives sanitized data and tries to create a new database record
-func (a *App) dbCreateUser(ctx context.Context, username, encPasswd string, deposit int64, role string) (err error) {
+func (a *App) dbCreateUser(ctx context.Context, username, encPasswd string, role string) (err error) {
 
 	if a.Db == nil {
 		return errors.New("no database configured")
@@ -32,9 +32,9 @@ func (a *App) dbCreateUser(ctx context.Context, username, encPasswd string, depo
 		}
 	}()
 
-	qryUser := "insert into users (id, username, password, deposit, role) values (?, ?, ?, ?, ?)"
+	qryUser := "insert into users (id, username, password, role) values (?, ?, ?, ?)"
 
-	_, err = tx.ExecContext(ctx, qryUser, uuid.New().String(), username, encPasswd, deposit, role)
+	_, err = tx.ExecContext(ctx, qryUser, uuid.New().String(), username, encPasswd, role)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (a *App) dbFindProductByID(ctx context.Context, productID string) (*model.P
 
 	var prod model.Product
 
-	qryProdByID := `select id, name, available_amount, count, seller_id from products where id=?`
+	qryProdByID := `select id, name, available_amount, cost, seller_id from products where id=?`
 
 	row := conn.QueryRowContext(ctx, qryProdByID, productID)
 	if err := row.Scan(&prod.ID, &prod.Name, &prod.AmountAvailable, &prod.Cost, &prod.SellerID); err != nil {

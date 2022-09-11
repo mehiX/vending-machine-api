@@ -45,13 +45,13 @@ func (a *App) SetupRoutes() {
 		r.Use(jwtauth.Authenticator)
 		r.Use(a.UserCtx)
 		r.Get("/user", a.handleShowCurrentUser())
-		r.Group(func(r chi.Router) {
+		r.Route("/product", func(r chi.Router) {
 			r.Use(a.SellerCtx)
-			r.Post("/product", a.handleCreateProduct())
-			r.Group(func(r chi.Router) {
+			r.Post("/", a.handleCreateProduct())
+			r.Route("/{productID:[a-zA-Z0-9-]+}", func(r chi.Router) {
 				r.Use(a.ProductCtx)
-				r.Put("/product/{productID:[a-zA-Z0-9-]+}", a.handleUpdateProduct())
-				r.Delete("/product/{productID:[a-zA-Z0-9-]+}", a.handleDeleteProduct())
+				r.Put("/", a.handleUpdateProduct())
+				r.Delete("/", a.handleDeleteProduct())
 			})
 		})
 		r.Group(func(r chi.Router) {
@@ -70,10 +70,10 @@ func (a *App) SetupRoutes() {
 		r.Get("/health", a.handleHealth)
 		r.Post("/login", a.handleLogin())
 		r.Post("/user", a.handleAddUser())
-		r.Get("/product/list", a.handleListProducts())
-		r.Group(func(r chi.Router) {
+		r.Get("/products/list", a.handleListProducts())
+		r.Route("/products/{productID:[a-zA-Z0-9-]+}", func(r chi.Router) {
 			r.Use(a.ProductCtx)
-			r.Get("/product/{productID:[a-zA-Z0-9-]+}", a.handleProductDetails())
+			r.Get("/", a.handleProductDetails())
 		})
 	})
 
@@ -165,6 +165,7 @@ func (a *App) ProductCtx(next http.Handler) http.Handler {
 		productID := chi.URLParam(r, "productID")
 		product, err := a.dbFindProductByID(r.Context(), productID)
 		if err != nil {
+			fmt.Printf("prod %s, error %s\n", productID, err.Error())
 			http.Error(w, "product not found", http.StatusNotFound)
 			return
 		}
