@@ -200,57 +200,6 @@ const docTemplate = `{
             }
         },
         "/product": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Update name and/or cost for a product",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "private",
-                    "product",
-                    "only sellers"
-                ],
-                "summary": "Update a product",
-                "parameters": [
-                    {
-                        "description": "product data",
-                        "name": "product",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/app.updateProductRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": "bad request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "401": {
-                        "description": "unauthorized",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "product not updated",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -297,41 +246,23 @@ const docTemplate = `{
                 }
             }
         },
-        "/product/list": {
-            "get": {
-                "description": "List all products in the database",
-                "tags": [
-                    "public",
-                    "product"
-                ],
-                "summary": "Products list",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Product"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "error encofing data",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/product/{productID}": {
-            "get": {
-                "description": "Show details for the product ID in the path",
-                "tags": [
-                    "public",
-                    "product"
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
                 ],
-                "summary": "Product details",
+                "description": "Update name and/or cost for a product",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "private",
+                    "product",
+                    "only sellers"
+                ],
+                "summary": "Update a product",
                 "parameters": [
                     {
                         "type": "string",
@@ -339,23 +270,35 @@ const docTemplate = `{
                         "name": "productID",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "product data",
+                        "name": "product",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app.updateProductRequest"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": "bad request",
                         "schema": {
-                            "$ref": "#/definitions/model.Product"
+                            "type": "string"
                         }
                     },
-                    "404": {
-                        "description": "product not found",
+                    "401": {
+                        "description": "unauthorized",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "500": {
-                        "description": "error encofing data",
+                        "description": "product not updated",
                         "schema": {
                             "type": "string"
                         }
@@ -402,6 +345,72 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "product not created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/products/list": {
+            "get": {
+                "description": "List all products in the database",
+                "tags": [
+                    "public",
+                    "product"
+                ],
+                "summary": "Products list",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Product"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "error encofing data",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{productID}": {
+            "get": {
+                "description": "Show details for the product ID in the path",
+                "tags": [
+                    "public",
+                    "product"
+                ],
+                "summary": "Product details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product ID",
+                        "name": "productID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Product"
+                        }
+                    },
+                    "404": {
+                        "description": "product not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "error encofing data",
                         "schema": {
                             "type": "string"
                         }
@@ -515,9 +524,6 @@ const docTemplate = `{
         "app.addUserRequest": {
             "type": "object",
             "properties": {
-                "deposit": {
-                    "type": "integer"
-                },
                 "password": {
                     "type": "string"
                 },
@@ -535,8 +541,17 @@ const docTemplate = `{
                 "amount": {
                     "type": "integer"
                 },
+                "change": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
                 "product": {
-                    "$ref": "#/definitions/app.prodNoAvailability"
+                    "$ref": "#/definitions/app.prodBuyerInfo"
+                },
+                "totalSpent": {
+                    "type": "integer"
                 }
             }
         },
@@ -579,7 +594,7 @@ const docTemplate = `{
                 }
             }
         },
-        "app.prodNoAvailability": {
+        "app.prodBuyerInfo": {
             "type": "object",
             "properties": {
                 "cost": {

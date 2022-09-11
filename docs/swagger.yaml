@@ -2,8 +2,6 @@ basePath: /
 definitions:
   app.addUserRequest:
     properties:
-      deposit:
-        type: integer
       password:
         type: string
       role:
@@ -15,8 +13,14 @@ definitions:
     properties:
       amount:
         type: integer
+      change:
+        items:
+          type: integer
+        type: array
       product:
-        $ref: '#/definitions/app.prodNoAvailability'
+        $ref: '#/definitions/app.prodBuyerInfo'
+      totalSpent:
+        type: integer
     type: object
   app.createProductRequest:
     properties:
@@ -43,7 +47,7 @@ definitions:
       username:
         type: string
     type: object
-  app.prodNoAvailability:
+  app.prodBuyerInfo:
     properties:
       cost:
         type: integer
@@ -243,39 +247,6 @@ paths:
       - private
       - product
       - only sellers
-    put:
-      consumes:
-      - application/json
-      description: Update name and/or cost for a product
-      parameters:
-      - description: product data
-        in: body
-        name: product
-        required: true
-        schema:
-          $ref: '#/definitions/app.updateProductRequest'
-      responses:
-        "204":
-          description: ""
-        "400":
-          description: bad request
-          schema:
-            type: string
-        "401":
-          description: unauthorized
-          schema:
-            type: string
-        "500":
-          description: product not updated
-          schema:
-            type: string
-      security:
-      - ApiKeyAuth: []
-      summary: Update a product
-      tags:
-      - private
-      - product
-      - only sellers
   /product/{productID}:
     delete:
       description: Receive product ID in the context and delete it from the database
@@ -307,6 +278,45 @@ paths:
       - private
       - product
       - only sellers
+    put:
+      consumes:
+      - application/json
+      description: Update name and/or cost for a product
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: product data
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/app.updateProductRequest'
+      responses:
+        "204":
+          description: ""
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "500":
+          description: product not updated
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Update a product
+      tags:
+      - private
+      - product
+      - only sellers
+  /products/{productID}:
     get:
       description: Show details for the product ID in the path
       parameters:
@@ -332,7 +342,7 @@ paths:
       tags:
       - public
       - product
-  /product/list:
+  /products/list:
     get:
       description: List all products in the database
       responses:
