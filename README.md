@@ -5,7 +5,8 @@ Creates a json REST API based on these [requirements](REQUIREMENTS.md)
 [![Build Status](https://github.com/mehiX/vending-machine-api/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/features/actions)
 [![codecov](https://codecov.io/gh/mehiX/vending-machine-api/branch/main/graph/badge.svg?token=DR9TYNBWAK)](https://codecov.io/gh/mehiX/vending-machine-api)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mehiX/vending-machine-api)](https://goreportcard.com/report/github.com/mehiX/vending-machine-api)
-[![Release](https://img.shields.io/github/release/mehiX/vending-machine-api.svg?style=flat-square)](https://github.com/mehiX/vending-machine-api/releases)
+![GitHub go.mod Go version (branch & subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/mehiX/vending-machine-api/main)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/mehiX/vending-machine-api)
 
 
 ## Requirements
