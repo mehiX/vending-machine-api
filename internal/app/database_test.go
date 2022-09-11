@@ -357,14 +357,10 @@ func TestDbDeleteProductNoRowsDeleted(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`delete from products`).WillReturnResult(sqlmock.NewResult(0, 0))
-	mock.ExpectRollback()
+	mock.ExpectCommit()
 
-	if err := NewApp("", db).dbDeleteProduct(context.Background(), "", ""); err == nil {
-		t.Fatal("should exit with error since no rows were deleted")
-	} else {
-		if err.Error() != "no rows deleted" {
-			t.Fatal("wrong error text")
-		}
+	if err := NewApp("", db).dbDeleteProduct(context.Background(), "", ""); err != nil {
+		t.Fatal(err)
 	}
 }
 

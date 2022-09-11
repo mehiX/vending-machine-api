@@ -147,19 +147,7 @@ func (a *App) dbDeleteProduct(ctx context.Context, productID, sellerID string) (
 
 	qryDelProd := `delete from products where id=? and seller_id=?`
 
-	res, err := tx.ExecContext(ctx, qryDelProd, productID, sellerID)
-	if err != nil {
-		return
-	}
-
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return
-	}
-
-	if rowsAffected < 1 {
-		err = errors.New("no rows deleted")
-	}
+	_, err = tx.ExecContext(ctx, qryDelProd, productID, sellerID)
 
 	return
 }
