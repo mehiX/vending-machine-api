@@ -190,9 +190,14 @@ func (a *app) returnUserAsJson(ctx context.Context, w http.ResponseWriter, userI
 		return
 	}
 
+	returnAsJSON(ctx, w, buyer)
+}
+
+func returnAsJSON(ctx context.Context, w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(buyer); err != nil {
-		fmt.Println("error encoding user", err)
+
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		fmt.Println("error encoding data", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

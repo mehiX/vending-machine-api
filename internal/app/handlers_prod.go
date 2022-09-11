@@ -71,8 +71,8 @@ func (a *app) handleCreateProduct() http.HandlerFunc {
 func (a *app) handleUpdateProduct() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		seller, ok := r.Context().Value(userContextKey).(*model.User)
-		if !ok {
+		user, ok := r.Context().Value(userContextKey).(*model.User)
+		if !ok || !user.IsSeller() {
 			fmt.Println("error: no user in context")
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -81,7 +81,8 @@ func (a *app) handleUpdateProduct() http.HandlerFunc {
 		product, ok := r.Context().Value(productContextKey).(*model.Product)
 		if !ok {
 			fmt.Println("error: no product in context")
-			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+			http.Error(w, "missing product", http.StatusBadRequest)
+			return
 		}
 
 		var data updateProductRequest
@@ -91,7 +92,7 @@ func (a *app) handleUpdateProduct() http.HandlerFunc {
 			return
 		}
 
-		if err := a.UpdateProduct(r.Context(), seller, product, data.Name, data.Cost); err != nil {
+		if err := a.UpdateProduct(r.Context(), user, product, data.Name, data.Cost); err != nil {
 			fmt.Println("error: delete product", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
@@ -155,13 +156,7 @@ func (a *app) handleProductDetails() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-
-		if err := json.NewEncoder(w).Encode(prod); err != nil {
-			fmt.Println("error encoding product", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+		returnAsJSON(r.Context(), w, prod)
 	}
 }
 
@@ -181,13 +176,7 @@ func (a *app) handleListProducts() http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-type", "application/json")
-
-		if err := json.NewEncoder(w).Encode(products); err != nil {
-			fmt.Println("encode products", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+		returnAsJSON(r.Context(), w, products)
 	}
 }
 

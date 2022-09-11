@@ -103,11 +103,6 @@ func (a *app) UpdateProduct(ctx context.Context, seller *model.User, prod *model
 		p.Cost = newCost
 	}
 
-	if p.Name == prod.Name && p.Cost == prod.Cost {
-		// nothing to update
-		return nil
-	}
-
 	if a.Db == nil {
 		return errors.New("no database")
 	}

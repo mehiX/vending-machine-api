@@ -469,3 +469,28 @@ func TestHandleDepositSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestReturnAsJSONFail(t *testing.T) {
+
+	w := httptest.NewRecorder()
+
+	invalidValue := make(chan int)
+
+	returnAsJSON(context.Background(), w, invalidValue)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusInternalServerError, resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt := strings.TrimSpace(string(b))
+	if txt != http.StatusText(resp.StatusCode) {
+		t.Fatalf("wrong error message. expected: %s, got: %s", http.StatusText(resp.StatusCode), txt)
+	}
+}

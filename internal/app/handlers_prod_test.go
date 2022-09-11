@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -146,6 +148,39 @@ func TestHandleDeleteProductFailNoData(t *testing.T) {
 	sc := w.Result().StatusCode
 	if sc != http.StatusBadRequest {
 		t.Error("should error if no product data in body")
+	}
+}
+
+func TestHandleDeleteProductSuccess(t *testing.T) {
+
+	r, err := http.NewRequest(http.MethodDelete, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{ID: "seller1", Role: model.ROLE_SELLER})
+	ctx = context.WithValue(ctx, productContextKey, &model.Product{ID: "product1", SellerID: "seller1"})
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`delete from products where`).WithArgs("product1", "seller1").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	NewApp("", db).handleDeleteProduct().ServeHTTP(w, r.WithContext(ctx))
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusNoContent {
+		t.Errorf("wrong status code. Expected: %d, got: %d", http.StatusNoContent, sc)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -394,36 +429,180 @@ func TestHandleProductDetailsSuccess(t *testing.T) {
 
 func TestHandleUpdateProductFailNoUserInCtx(t *testing.T) {
 
+	r, err := http.NewRequest(http.MethodPut, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	NewApp("", nil).handleUpdateProduct().ServeHTTP(w, r)
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusUnauthorized {
+		t.Error("should have a user logged in")
+	}
 }
 
 func TestHandleUpdateProductFailUserIsNotSeller(t *testing.T) {
 
+	r, err := http.NewRequest(http.MethodPut, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_BUYER})
+
+	NewApp("", nil).handleUpdateProduct().ServeHTTP(w, r.WithContext(ctx))
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusUnauthorized {
+		t.Error("should have a seller logged in")
+	}
 }
 
 func TestHandleUpdateProductFailNoProductInCtx(t *testing.T) {
 
+	r, err := http.NewRequest(http.MethodPut, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_SELLER})
+
+	NewApp("", nil).handleUpdateProduct().ServeHTTP(w, r.WithContext(ctx))
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusBadRequest {
+		t.Error("should have a product in context")
+	}
+
+	body := w.Result().Body
+	defer body.Close()
+	b, err := ioutil.ReadAll(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt := strings.TrimSpace(string(b))
+
+	if txt != "missing product" {
+		t.Fatalf("wrong error message. expected: %s, got: %s", "missing product", txt)
+	}
 }
 
-func TestHandleUpdateProductFailNotSameSeller(t *testing.T) {
+func TestHandleUpdateProductFailNotProductData(t *testing.T) {
 
+	var buf bytes.Buffer
+	buf.WriteString("blah blah")
+
+	r, err := http.NewRequest(http.MethodPut, "/product", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_SELLER})
+	ctx = context.WithValue(ctx, productContextKey, &model.Product{ID: "product1"})
+
+	NewApp("", nil).handleUpdateProduct().ServeHTTP(w, r.WithContext(ctx))
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusBadRequest {
+		t.Error("should have a product in context")
+	}
+
+	body := w.Result().Body
+	defer body.Close()
+	b, err := ioutil.ReadAll(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt := strings.TrimSpace(string(b))
+
+	if txt != "bad data in body" {
+		t.Fatalf("wrong error message. expected: %s, got: %s", "bad data in body", txt)
+	}
 }
 
 func TestHandleUpdateProductFailNoDatabase(t *testing.T) {
 
-}
+	var buf bytes.Buffer
+	data := updateProductRequest{
+		Name: "some new name",
+		Cost: 135,
+	}
+	if err := json.NewEncoder(&buf).Encode(data); err != nil {
+		t.Fatal(err)
+	}
 
-func TestHandleUpdateProductFailDatabaseError(t *testing.T) {
+	r, err := http.NewRequest(http.MethodPut, "/product", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
 
-}
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_SELLER})
+	ctx = context.WithValue(ctx, productContextKey, &model.Product{ID: "product1"})
 
-func TestHandleUpdateProductFailWrongName(t *testing.T) {
+	NewApp("", nil).handleUpdateProduct().ServeHTTP(w, r.WithContext(ctx))
 
-}
+	sc := w.Result().StatusCode
+	if sc != http.StatusInternalServerError {
+		t.Error("should have a product in context")
+	}
 
-func TestHandleUpdateProductFailWrongCost(t *testing.T) {
+	body := w.Result().Body
+	defer body.Close()
+	b, err := ioutil.ReadAll(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt := strings.TrimSpace(string(b))
 
+	if txt != http.StatusText(http.StatusInternalServerError) {
+		t.Fatalf("wrong error message. expected: %s, got: %s", http.StatusText(http.StatusInternalServerError), txt)
+	}
 }
 
 func TestHandleUpdateProductSuccess(t *testing.T) {
 
+	var buf bytes.Buffer
+	data := updateProductRequest{
+		Name: "some new name",
+		Cost: 135,
+	}
+	if err := json.NewEncoder(&buf).Encode(data); err != nil {
+		t.Fatal(err)
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update products set`).WithArgs("some new name", 135, "product1", "seller2").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	r, err := http.NewRequest(http.MethodPut, "/product", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{ID: "seller2", Role: model.ROLE_SELLER})
+	ctx = context.WithValue(ctx, productContextKey, &model.Product{ID: "product1", SellerID: "seller2"})
+
+	NewApp("", db).handleUpdateProduct().ServeHTTP(w, r.WithContext(ctx))
+
+	sc := w.Result().StatusCode
+	if sc != http.StatusNoContent {
+		t.Error("wrong status code")
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
 }
