@@ -532,3 +532,74 @@ func TestDbUserUpdateDepositSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestDbBuyFailTxError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin().WillReturnError(errors.New("no tx"))
+
+	if err := NewApp("", db).dbBuy(context.Background(), "user", "prod", 1, 1); err == nil {
+		t.Error("should fail")
+	} else {
+		if err.Error() != "no tx" {
+			t.Errorf("wrong error message. expected: %s, got: %s", "no tx", err.Error())
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDbBuyFailUpdateProd(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update products set available_amount =`).WithArgs(1, "prod").WillReturnError(errors.New("no prod"))
+	mock.ExpectRollback()
+
+	if err := NewApp("", db).dbBuy(context.Background(), "user", "prod", 1, 1); err == nil {
+		t.Error("should fail")
+	} else {
+		if err.Error() != "no prod" {
+			t.Errorf("wrong error message. expected: %s, got: %s", "no prod", err.Error())
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDbBuyFailUpdateUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectBegin()
+	mock.ExpectExec(`update products set available_amount =`).WithArgs(1, "prod").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(`update users set deposit = `).WithArgs(1, "user").WillReturnError(errors.New("no user"))
+	mock.ExpectRollback()
+
+	if err := NewApp("", db).dbBuy(context.Background(), "user", "prod", 1, 1); err == nil {
+		t.Error("should fail")
+	} else {
+		if err.Error() != "no user" {
+			t.Errorf("wrong error message. expected: %s, got: %s", "no user", err.Error())
+		}
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
