@@ -83,7 +83,7 @@ func TestHealthOK(t *testing.T) {
 	}
 }
 
-func TestValidateExists(t *testing.T) {
+func TestRouteUser(t *testing.T) {
 
 	r, err := http.NewRequest(http.MethodGet, "/user", nil)
 	if err != nil {
@@ -101,33 +101,43 @@ func TestValidateExists(t *testing.T) {
 }
 
 func TestProtectedRoutes(t *testing.T) {
-	type route struct {
-		method string
-		path   string
+	type scenario struct {
+		method             string
+		path               string
+		expectedStatusCode int
 	}
 
-	routes := []route{
+	scenarios := []scenario{
 		{
-			method: http.MethodGet,
-			path:   "/user",
+			method:             http.MethodGet,
+			path:               "/user",
+			expectedStatusCode: http.StatusUnauthorized,
 		},
+		{method: http.MethodPost, path: "/product", expectedStatusCode: http.StatusUnauthorized},
+		{method: http.MethodPut, path: "/product/abc-123-def", expectedStatusCode: http.StatusUnauthorized},
+		{method: http.MethodDelete, path: "/product/abc-123-def", expectedStatusCode: http.StatusUnauthorized},
+		{method: http.MethodPost, path: "/reset", expectedStatusCode: http.StatusUnauthorized},
+		{method: http.MethodPost, path: "/deposit/10", expectedStatusCode: http.StatusUnauthorized},
+		{method: http.MethodGet, path: "/buy/product/abc-123-def/amount/2", expectedStatusCode: http.StatusUnauthorized},
 	}
 
 	router := NewApp("", nil).Router
 
-	for _, r := range routes {
-		req, err := http.NewRequest(r.method, r.path, nil)
-		if err != nil {
-			t.Error(err)
-		}
-		w := httptest.NewRecorder()
-		router.ServeHTTP(w, req)
+	for _, s := range scenarios {
+		t.Run(s.path, func(t *testing.T) {
+			req, err := http.NewRequest(s.method, s.path, nil)
+			if err != nil {
+				t.Error(err)
+			}
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
 
-		resp := w.Result()
+			resp := w.Result()
 
-		if resp.StatusCode != http.StatusUnauthorized {
-			t.Errorf("%s %s wrong status code. Expected: %d, got: %d", r.method, r.path, http.StatusUnauthorized, resp.StatusCode)
-		}
+			if resp.StatusCode != s.expectedStatusCode {
+				t.Errorf("%s %s wrong status code. Expected: %d, got: %d", s.method, s.path, s.expectedStatusCode, resp.StatusCode)
+			}
+		})
 	}
 
 }

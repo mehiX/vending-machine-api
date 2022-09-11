@@ -52,6 +52,10 @@ To test local changes add the `--build` flag:
 docker-compose up -d --build && docker-compose logs -f vm
 ```
 
+## Swagger UI
+
+Available at `http://<server>:<port>/swagger/index.html`
+
 ## Generate code coverage report
 
 ```shell
