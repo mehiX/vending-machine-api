@@ -10,7 +10,7 @@ import (
 
 // CreateProduct validates the input parameters and calls the repository to store the data in the database
 // Only users with the role `SELLER` can create objects
-func (a *app) CreateProduct(ctx context.Context, seller *model.User, amountAvailable int64, cost int64, name string) (err error) {
+func (a *App) CreateProduct(ctx context.Context, seller *model.User, amountAvailable int64, cost int64, name string) (err error) {
 
 	if seller == nil {
 		return errors.New("missing seller")
@@ -39,7 +39,7 @@ func (a *app) CreateProduct(ctx context.Context, seller *model.User, amountAvail
 	return a.dbCreateProduct(ctx, seller.ID, amountAvailable, cost, strings.TrimSpace(name))
 }
 
-func (a *app) DeleteProduct(ctx context.Context, seller *model.User, product *model.Product) (err error) {
+func (a *App) DeleteProduct(ctx context.Context, seller *model.User, product *model.Product) (err error) {
 
 	if seller == nil {
 		return errors.New("user is nil")
@@ -64,7 +64,7 @@ func (a *app) DeleteProduct(ctx context.Context, seller *model.User, product *mo
 	return a.dbDeleteProduct(ctx, product.ID, seller.ID)
 }
 
-func (a *app) ListProducts(ctx context.Context) ([]model.Product, error) {
+func (a *App) ListProducts(ctx context.Context) ([]model.Product, error) {
 
 	if a.Db == nil {
 		return nil, errors.New("no db conn")
@@ -76,7 +76,7 @@ func (a *app) ListProducts(ctx context.Context) ([]model.Product, error) {
 
 // UpdateProduct allows a seller to update his products' data. Only `name` and `cost` can be update.
 // For security, only the parameters that can change can be passed as arguments
-func (a *app) UpdateProduct(ctx context.Context, seller *model.User, prod *model.Product, newName string, newCost int64) (err error) {
+func (a *App) UpdateProduct(ctx context.Context, seller *model.User, prod *model.Product, newName string, newCost int64) (err error) {
 
 	if seller == nil || prod == nil {
 		return errors.New("seller and product must exist")

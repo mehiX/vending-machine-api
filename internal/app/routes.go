@@ -28,7 +28,7 @@ var (
 	sellerContextKey      = &contextKey{"seller"}
 )
 
-func (a *app) SetupRoutes() {
+func (a *App) SetupRoutes() {
 
 	if a.Router == nil {
 		a.Router = chi.NewMux()
@@ -87,7 +87,7 @@ func (a *app) SetupRoutes() {
 // @Success		200 {string} string "OK"
 // @Success		424 {string} string "No DB"
 // @Router 		/health [get]
-func (a *app) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (a *App) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if a.Db != nil {
 		w.Write([]byte("OK"))
 	} else {
@@ -96,7 +96,7 @@ func (a *app) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *app) UserCtx(next http.Handler) http.Handler {
+func (a *App) UserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, claims, err := jwtauth.FromContext(r.Context())
 		if err != nil {
@@ -123,7 +123,7 @@ func (a *app) UserCtx(next http.Handler) http.Handler {
 
 // SellerCtx only allows seller accounts to access successive endpoints
 // Requires a "user" object in current request context
-func (a *app) SellerCtx(next http.Handler) http.Handler {
+func (a *App) SellerCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		usr, ok := r.Context().Value(userContextKey).(*model.User)
 		if !ok || !usr.IsSeller() {
@@ -138,7 +138,7 @@ func (a *app) SellerCtx(next http.Handler) http.Handler {
 // BuyerCtx only allows buyer accounts to access successive endpoints
 // Requires a "user" object in current request context
 // If there is a coinValue on the request path, it will set it as a context vlaue. No validation is performed at this stage
-func (a *app) BuyerCtx(next http.Handler) http.Handler {
+func (a *App) BuyerCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		usr, ok := r.Context().Value(userContextKey).(*model.User)
 		if !ok || !usr.IsBuyer() {
@@ -160,7 +160,7 @@ func (a *app) BuyerCtx(next http.Handler) http.Handler {
 
 // ProductCtx checks url paramters for `productID` and if found tries to create a Product in context.
 // Does the same for `amount` which should be numeric and represent the amount of products. Amount is optional
-func (a *app) ProductCtx(next http.Handler) http.Handler {
+func (a *App) ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		productID := chi.URLParam(r, "productID")
 		product, err := a.dbFindProductByID(r.Context(), productID)

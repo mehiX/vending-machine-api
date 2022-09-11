@@ -2,10 +2,8 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -13,64 +11,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// ConnectDB tries to establish a database connection.
-// Retries periodically to check that the connection is still available.
-// Should be run in a separate goroutine.
-func (a *app) ConnectDB(done context.Context, connStr string, pingDelay time.Duration) {
-
-	test := func(db *sql.DB) error {
-		ctx, cancel := context.WithTimeout(done, 2*time.Second)
-		defer cancel()
-		return db.PingContext(ctx)
-	}
-
-	// don't fill the logs if connection is OK
-	var printConnOK bool = true
-
-	tkr := time.NewTicker(pingDelay)
-	for {
-		select {
-		case <-done.Done():
-			if a.Db != nil {
-				a.Db.Close()
-			}
-			fmt.Println("DB connection closed")
-			return
-		case <-tkr.C:
-			if a.Db == nil {
-				// try to connect
-				fmt.Println("DB: connecting...")
-				db, err := sql.Open("mysql", connStr)
-				if err != nil {
-					fmt.Printf("DB: %v\n", err.Error())
-				} else {
-					db.SetConnMaxLifetime(0)
-					db.SetMaxIdleConns(50)
-					db.SetMaxOpenConns(50)
-
-					if err := test(db); err == nil {
-						a.Db = db
-					}
-				}
-			} else {
-				// check if server still available
-				if err := test(a.Db); err != nil {
-					fmt.Printf("DB: Ping %v\n", err.Error())
-					a.Db = nil
-					printConnOK = true
-				} else {
-					if printConnOK {
-						fmt.Println("DB: connection OK")
-						printConnOK = false
-					}
-				}
-			}
-		}
-	}
-}
-
 // dbCreateUser receives sanitized data and tries to create a new database record
-func (a *app) dbCreateUser(ctx context.Context, username, encPasswd string, deposit int64, role string) (err error) {
+func (a *App) dbCreateUser(ctx context.Context, username, encPasswd string, deposit int64, role string) (err error) {
 
 	if a.Db == nil {
 		return errors.New("no database configured")
@@ -101,7 +43,7 @@ func (a *app) dbCreateUser(ctx context.Context, username, encPasswd string, depo
 
 }
 
-func (a *app) dbCreateProduct(ctx context.Context, sellerID string, amountAvailable int64, cost int64, name string) (err error) {
+func (a *App) dbCreateProduct(ctx context.Context, sellerID string, amountAvailable int64, cost int64, name string) (err error) {
 	tx, err := a.Db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -127,7 +69,7 @@ func (a *app) dbCreateProduct(ctx context.Context, sellerID string, amountAvaila
 
 }
 
-func (a *app) dbFindUserByID(ctx context.Context, userID string) (*model.User, error) {
+func (a *App) dbFindUserByID(ctx context.Context, userID string) (*model.User, error) {
 
 	if a.Db == nil {
 		return nil, errors.New("no database configured")
@@ -149,7 +91,7 @@ func (a *app) dbFindUserByID(ctx context.Context, userID string) (*model.User, e
 	return &usr, nil
 }
 
-func (a *app) dbFindUserByUsername(ctx context.Context, username string) (*model.User, error) {
+func (a *App) dbFindUserByUsername(ctx context.Context, username string) (*model.User, error) {
 
 	conn, err := a.Db.Conn(ctx)
 	if err != nil {
@@ -167,7 +109,7 @@ func (a *app) dbFindUserByUsername(ctx context.Context, username string) (*model
 	return &usr, nil
 }
 
-func (a *app) dbFindProductByID(ctx context.Context, productID string) (*model.Product, error) {
+func (a *App) dbFindProductByID(ctx context.Context, productID string) (*model.Product, error) {
 
 	conn, err := a.Db.Conn(ctx)
 	if err != nil {
@@ -187,7 +129,7 @@ func (a *app) dbFindProductByID(ctx context.Context, productID string) (*model.P
 	return &prod, nil
 }
 
-func (a *app) dbDeleteProduct(ctx context.Context, productID, sellerID string) (err error) {
+func (a *App) dbDeleteProduct(ctx context.Context, productID, sellerID string) (err error) {
 
 	tx, err := a.Db.BeginTx(ctx, nil)
 	if err != nil {
@@ -222,7 +164,7 @@ func (a *app) dbDeleteProduct(ctx context.Context, productID, sellerID string) (
 	return
 }
 
-func (a *app) dbListProducts(ctx context.Context) ([]model.Product, error) {
+func (a *App) dbListProducts(ctx context.Context) ([]model.Product, error) {
 	conn, err := a.Db.Conn(ctx)
 	if err != nil {
 		return nil, err
@@ -248,7 +190,7 @@ func (a *app) dbListProducts(ctx context.Context) ([]model.Product, error) {
 	return products, nil
 }
 
-func (a *app) dbUpdateProduct(ctx context.Context, p model.Product) (err error) {
+func (a *App) dbUpdateProduct(ctx context.Context, p model.Product) (err error) {
 
 	tx, err := a.Db.BeginTx(ctx, nil)
 	if err != nil {
@@ -271,7 +213,7 @@ func (a *app) dbUpdateProduct(ctx context.Context, p model.Product) (err error) 
 	return
 }
 
-func (a *app) dbUserUpdateDeposit(ctx context.Context, userID string, newDeposit int64) (err error) {
+func (a *App) dbUserUpdateDeposit(ctx context.Context, userID string, newDeposit int64) (err error) {
 
 	if a.Db == nil {
 		return errors.New("no database configured")
@@ -301,7 +243,7 @@ func (a *app) dbUserUpdateDeposit(ctx context.Context, userID string, newDeposit
 
 // dbBuy implements the buy logic at the database level
 // this would be better implemented in a stored procedure
-func (a *app) dbBuy(ctx context.Context, userID, prodID string, amount int, totalCost int64) (err error) {
+func (a *App) dbBuy(ctx context.Context, userID, prodID string, amount int, totalCost int64) (err error) {
 
 	if a.Db == nil {
 		return errors.New("no database configured")

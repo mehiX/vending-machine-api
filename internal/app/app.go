@@ -10,16 +10,16 @@ import (
 	"github.com/go-chi/jwtauth/v5"
 )
 
-type app struct {
+type App struct {
 	Addr    string
 	Router  *chi.Mux
 	JwtAuth *jwtauth.JWTAuth
 	Db      *sql.DB
 }
 
-func NewApp(addr string, db *sql.DB) *app {
+func NewApp(addr string, db *sql.DB) *App {
 
-	a := &app{
+	a := &App{
 		Addr:    addr,
 		Db:      db,
 		JwtAuth: jwtauth.New(os.Getenv("JWT_ALG"), []byte(os.Getenv("JWT_SIGNKEY")), nil),
@@ -30,7 +30,7 @@ func NewApp(addr string, db *sql.DB) *app {
 	return a
 }
 
-func (a *app) HttpServer() http.Server {
+func (a *App) HttpServer() http.Server {
 	return http.Server{
 		Addr:              a.Addr,
 		Handler:           a.Router,

@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"os"
@@ -62,7 +63,7 @@ func main() {
 	}()
 
 	done, stopDB := context.WithCancel(context.Background())
-	go vm.ConnectDB(done, os.Getenv("MYSQL_CONN_STR"), 5*time.Second)
+	go ConnectDB(done, vm, os.Getenv("MYSQL_CONN_STR"), 5*time.Second)
 
 	<-c
 	fmt.Println("Shutting down...")
@@ -79,4 +80,64 @@ func main() {
 	}
 
 	fmt.Println("Done")
+}
+
+// ConnectDB tries to establish a database connection.
+// Retries periodically to check that the connection is still available.
+// Should be run in a separate goroutine.
+func ConnectDB(done context.Context, myApp *app.App, connStr string, pingDelay time.Duration) {
+
+	if myApp == nil {
+		return
+	}
+
+	test := func(db *sql.DB) error {
+		ctx, cancel := context.WithTimeout(done, 2*time.Second)
+		defer cancel()
+		return db.PingContext(ctx)
+	}
+
+	// don't fill the logs if connection is OK
+	var printConnOK bool = true
+
+	tkr := time.NewTicker(pingDelay)
+	for {
+		select {
+		case <-done.Done():
+			if myApp.Db != nil {
+				myApp.Db.Close()
+			}
+			fmt.Println("DB connection closed")
+			return
+		case <-tkr.C:
+			if myApp.Db == nil {
+				// try to connect
+				fmt.Println("DB: connecting...")
+				db, err := sql.Open("mysql", connStr)
+				if err != nil {
+					fmt.Printf("DB: %v\n", err.Error())
+				} else {
+					db.SetConnMaxLifetime(0)
+					db.SetMaxIdleConns(50)
+					db.SetMaxOpenConns(50)
+
+					if err := test(db); err == nil {
+						myApp.Db = db
+					}
+				}
+			} else {
+				// check if server still available
+				if err := test(myApp.Db); err != nil {
+					fmt.Printf("DB: Ping %v\n", err.Error())
+					myApp.Db = nil
+					printConnOK = true
+				} else {
+					if printConnOK {
+						fmt.Println("DB: connection OK")
+						printConnOK = false
+					}
+				}
+			}
+		}
+	}
 }

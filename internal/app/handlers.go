@@ -25,7 +25,7 @@ const (
 // @Failure		401 {string} string "not authorized"
 // @Failure		400 {string} string "bad request"
 // @Router 		/user [get]
-func (a *app) handleShowCurrentUser() http.HandlerFunc {
+func (a *App) handleShowCurrentUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		usr := r.Context().Value(userContextKey).(*model.User)
 
@@ -50,7 +50,7 @@ func (a *app) handleShowCurrentUser() http.HandlerFunc {
 // @Failure		500 {string} string "user not created"
 // @Failure		400 {string} string "bad request"
 // @Router 		/user [post]
-func (a *app) handleAddUser() http.HandlerFunc {
+func (a *App) handleAddUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var data addUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -79,7 +79,7 @@ func (a *app) handleAddUser() http.HandlerFunc {
 // @Failure		401 {string} string "not authorized"
 // @Failure		400 {string} string "bad request"
 // @Router 		/login [post]
-func (a *app) handleLogin() http.HandlerFunc {
+func (a *App) handleLogin() http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -115,7 +115,7 @@ func (a *app) handleLogin() http.HandlerFunc {
 // @Success		200 {object} model.User "user with reset deposit"
 // @Failure		500 {string} string "reset error"
 // @Router 		/reset [post]
-func (a *app) handleReset() http.HandlerFunc {
+func (a *App) handleReset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -146,7 +146,7 @@ func (a *app) handleReset() http.HandlerFunc {
 // @Failure		500 {string} string "deposit not updated"
 // @Failure		400 {string} string "bad request"
 // @Router 		/deposit/{coin} [post]
-func (a *app) handleDeposit() http.HandlerFunc {
+func (a *App) handleDeposit() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -173,7 +173,20 @@ func (a *app) handleDeposit() http.HandlerFunc {
 	}
 }
 
-func (a *app) handleBuy() http.HandlerFunc {
+// @Summary 	Buy a product
+// @Description Use the deposit to buy a product
+// @Tags		private, only buyers
+// @Security 	ApiKeyAuth
+// @Produces	application/json
+// @Param 		productID path string true "Product"
+// @Param 		amount path int true "Amount"
+// @Success		200 {object} buyResponse "situtation after the buy"
+// @Failure		500 {string} string "encoding errors"
+// @Failure		400 {string} string "bad request"
+// @Failure		401 {string} string "not authorized"
+// @Failure		404 {string} string "product not found, seller not found"
+// @Router 		/buy/product/{productID}/amount/{amount} [post]
+func (a *App) handleBuy() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		ctx := r.Context()
@@ -220,7 +233,7 @@ func (a *app) handleBuy() http.HandlerFunc {
 	}
 }
 
-func (a *app) returnUserAsJson(ctx context.Context, w http.ResponseWriter, userID string) {
+func (a *App) returnUserAsJson(ctx context.Context, w http.ResponseWriter, userID string) {
 	buyer, err := a.FindUserByID(ctx, userID)
 	if err != nil {
 		fmt.Println("error find user by id", err)
@@ -241,7 +254,7 @@ func returnAsJSON(ctx context.Context, w http.ResponseWriter, data any) {
 	}
 }
 
-func (a *app) getEncTokenString(userID, username string) (tokenString string, err error) {
+func (a *App) getEncTokenString(userID, username string) (tokenString string, err error) {
 	t := jwt.New()
 	t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
 	t.Set(jwt.NotBeforeKey, time.Now())

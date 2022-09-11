@@ -19,6 +19,69 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/buy/product/{productID}/amount/{amount}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Use the deposit to buy a product",
+                "tags": [
+                    "private",
+                    "only buyers"
+                ],
+                "summary": "Buy a product",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Product",
+                        "name": "productID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Amount",
+                        "name": "amount",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "situtation after the buy",
+                        "schema": {
+                            "$ref": "#/definitions/app.buyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "not authorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "product not found, seller not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "encoding errors",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/deposit/{coin}": {
             "post": {
                 "security": [
@@ -466,6 +529,17 @@ const docTemplate = `{
                 }
             }
         },
+        "app.buyResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "integer"
+                },
+                "product": {
+                    "$ref": "#/definitions/app.prodNoAvailability"
+                }
+            }
+        },
         "app.createProductRequest": {
             "type": "object",
             "properties": {
@@ -501,6 +575,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "app.prodNoAvailability": {
+            "type": "object",
+            "properties": {
+                "cost": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sellerName": {
                     "type": "string"
                 }
             }

@@ -19,7 +19,7 @@ import (
 // @Failure		500 {string} string "product not created"
 // @Failure		400 {string} string "bad request"
 // @Router 		/product [post]
-func (a *app) handleCreateProduct() http.HandlerFunc {
+func (a *App) handleCreateProduct() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// get the seller
 		seller, ok := r.Context().Value(userContextKey).(*model.User)
@@ -68,7 +68,7 @@ func (a *app) handleCreateProduct() http.HandlerFunc {
 // Only `name` and `cost` can be updated.
 // Only the seller of the product can update its data.
 // It doesn't return any data, nor does it signal that nothing was updated if the provided data is partially or completely wrong.
-func (a *app) handleUpdateProduct() http.HandlerFunc {
+func (a *App) handleUpdateProduct() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		user, ok := r.Context().Value(userContextKey).(*model.User)
@@ -112,7 +112,7 @@ func (a *app) handleUpdateProduct() http.HandlerFunc {
 // @Failure		400 {string} string "bad request"
 // @Failure		401 {string} string "not authorized"
 // @Router 		/product/{productID} [delete]
-func (a *app) handleDeleteProduct() http.HandlerFunc {
+func (a *App) handleDeleteProduct() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		seller, ok := r.Context().Value(userContextKey).(*model.User)
@@ -146,7 +146,7 @@ func (a *app) handleDeleteProduct() http.HandlerFunc {
 // @Failure		404 {string} string "product not found"
 // @Failure		500 {string} string "error encofing data"
 // @Router 		/product/{productID} [get]
-func (a *app) handleProductDetails() http.HandlerFunc {
+func (a *App) handleProductDetails() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		prod, ok := r.Context().Value(productContextKey).(*model.Product)
@@ -166,7 +166,7 @@ func (a *app) handleProductDetails() http.HandlerFunc {
 // @Success		200 {object} []model.Product
 // @Failure		500 {string} string "error encofing data"
 // @Router 		/product/list [get]
-func (a *app) handleListProducts() http.HandlerFunc {
+func (a *App) handleListProducts() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		products, err := a.ListProducts(r.Context())

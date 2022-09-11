@@ -11,6 +11,13 @@ definitions:
       username:
         type: string
     type: object
+  app.buyResponse:
+    properties:
+      amount:
+        type: integer
+      product:
+        $ref: '#/definitions/app.prodNoAvailability'
+    type: object
   app.createProductRequest:
     properties:
       amount_available:
@@ -34,6 +41,15 @@ definitions:
       password:
         type: string
       username:
+        type: string
+    type: object
+  app.prodNoAvailability:
+    properties:
+      cost:
+        type: integer
+      name:
+        type: string
+      sellerName:
         type: string
     type: object
   app.updateProductRequest:
@@ -78,6 +94,47 @@ info:
   title: Vending Machine API
   version: "1.0"
 paths:
+  /buy/product/{productID}/amount/{amount}:
+    post:
+      description: Use the deposit to buy a product
+      parameters:
+      - description: Product
+        in: path
+        name: productID
+        required: true
+        type: string
+      - description: Amount
+        in: path
+        name: amount
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: situtation after the buy
+          schema:
+            $ref: '#/definitions/app.buyResponse'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "401":
+          description: not authorized
+          schema:
+            type: string
+        "404":
+          description: product not found, seller not found
+          schema:
+            type: string
+        "500":
+          description: encoding errors
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Buy a product
+      tags:
+      - private
+      - only buyers
   /deposit/{coin}:
     post:
       description: Deposit 1 coin at a time

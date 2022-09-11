@@ -11,7 +11,7 @@ import (
 
 const password_min_length = 8
 
-func (a *app) CreateUser(ctx context.Context, username, password string, deposit int64, role model.TypeRole) (err error) {
+func (a *App) CreateUser(ctx context.Context, username, password string, deposit int64, role model.TypeRole) (err error) {
 
 	if err = validateUsername(username); err != nil {
 		return
@@ -37,7 +37,7 @@ func (a *app) CreateUser(ctx context.Context, username, password string, deposit
 	return a.dbCreateUser(ctx, username, string(encPasswd), deposit, role)
 }
 
-func (a *app) FindUserByCredentials(ctx context.Context, username, password string) (*model.User, error) {
+func (a *App) FindUserByCredentials(ctx context.Context, username, password string) (*model.User, error) {
 
 	usr, err := a.dbFindUserByUsername(ctx, username)
 	if err != nil {
@@ -53,15 +53,15 @@ func (a *app) FindUserByCredentials(ctx context.Context, username, password stri
 	return usr, nil
 }
 
-func (a *app) FindUserByID(ctx context.Context, id string) (*model.User, error) {
+func (a *App) FindUserByID(ctx context.Context, id string) (*model.User, error) {
 	return a.dbFindUserByID(ctx, id)
 }
 
-func (a *app) ResetDeposit(ctx context.Context, usr *model.User) error {
+func (a *App) ResetDeposit(ctx context.Context, usr *model.User) error {
 	return a.dbUserUpdateDeposit(ctx, usr.ID, 0)
 }
 
-func (a *app) UserDepositCoin(ctx context.Context, usr *model.User, coin int) error {
+func (a *App) UserDepositCoin(ctx context.Context, usr *model.User, coin int) error {
 
 	if err := validateDepositCoin(coin); err != nil {
 		return errors.New("coin value not allowed")
@@ -75,7 +75,7 @@ func (a *app) UserDepositCoin(ctx context.Context, usr *model.User, coin int) er
 	return nil
 }
 
-func (a *app) Buy(ctx context.Context, user *model.User, prod *model.Product, amount int) error {
+func (a *App) Buy(ctx context.Context, user *model.User, prod *model.Product, amount int) error {
 	if amount > int(prod.AmountAvailable) {
 		return errors.New("no availability")
 	}
