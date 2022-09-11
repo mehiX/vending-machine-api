@@ -21,9 +21,10 @@ type contextKey struct {
 }
 
 var (
-	userContextKey      = &contextKey{"user"}    // holds a reference to the current user
-	productContextKey   = &contextKey{"product"} // holds a reference to the current product (based on the productID in path)
-	coinValueContextKey = &contextKey{"coinValue"}
+	userContextKey        = &contextKey{"user"}    // holds a reference to the current user
+	productContextKey     = &contextKey{"product"} // holds a reference to the current product (based on the productID in path)
+	coinValueContextKey   = &contextKey{"coinValue"}
+	amountValueContextKey = &contextKey{"amountProduct"}
 )
 
 func (a *app) SetupRoutes() {
@@ -156,6 +157,8 @@ func (a *app) BuyerCtx(next http.Handler) http.Handler {
 	})
 }
 
+// ProductCtx checks url paramters for `productID` and if found tries to create a Product in context.
+// Does the same for `amount` which should be numeric and represent the amount of products. Amount is optional
 func (a *app) ProductCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		productID := chi.URLParam(r, "productID")
@@ -165,6 +168,14 @@ func (a *app) ProductCtx(next http.Handler) http.Handler {
 			return
 		}
 		ctx := context.WithValue(r.Context(), productContextKey, product)
+
+		amount, err := strconv.Atoi(chi.URLParam(r, "amount"))
+		if err != nil {
+			fmt.Println("amount must be a number")
+		} else {
+			ctx = context.WithValue(ctx, amountValueContextKey, &amount)
+		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

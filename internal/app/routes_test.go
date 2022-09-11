@@ -730,3 +730,188 @@ func TestBuyerCtxSuccessWithCoin(t *testing.T) {
 		t.Errorf("the handler should pass the request")
 	}
 }
+
+func TestProductCtxFailProductDoesnotExist(t *testing.T) {
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p, ok := r.Context().Value(productContextKey).(*model.Product)
+		if ok || p != nil {
+			t.Error("there should be no product in context")
+		}
+	})
+
+	r, err := http.NewRequest(http.MethodGet, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery(`select .* from products where id=\?`).WithArgs("product-id").WillReturnError(errors.New("no rows"))
+
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("productID", "product-id")
+
+	ctx := context.WithValue(r.Context(), chi.RouteCtxKey, chiCtx)
+
+	NewApp("", db).ProductCtx(next).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusNotFound, resp.StatusCode)
+	}
+}
+
+func TestProductCtxSuccess(t *testing.T) {
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p, ok := r.Context().Value(productContextKey).(*model.Product)
+		if !ok || p == nil {
+			t.Error("there should be a product in context")
+		} else {
+			if p.ID != "product-id" {
+				t.Errorf("wrong product in context. expected ID: %s, got: %s", "product-id", p.ID)
+			}
+		}
+	})
+
+	r, err := http.NewRequest(http.MethodGet, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	cols := []string{"id", "name", "available_amount", "cost", "seller_id"}
+
+	mock.ExpectQuery(`select .* from products where id=\?`).WithArgs("product-id").WillReturnRows(sqlmock.NewRows(cols).
+		AddRow("product-id", "name", 10, 5, "seller-id-1"))
+
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("productID", "product-id")
+
+	ctx := context.WithValue(r.Context(), chi.RouteCtxKey, chiCtx)
+
+	NewApp("", db).ProductCtx(next).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusOK, resp.StatusCode)
+	}
+}
+
+func TestProductCtxSuccessWithBadAmount(t *testing.T) {
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p, ok := r.Context().Value(productContextKey).(*model.Product)
+		if !ok || p == nil {
+			t.Error("there should be a product in context")
+		} else {
+			if p.ID != "product-id" {
+				t.Errorf("wrong product in context. expected ID: %s, got: %s", "product-id", p.ID)
+			}
+		}
+
+		a, ok := r.Context().Value(amountValueContextKey).(*int)
+		if ok || a != nil {
+			t.Error("amount not valid, should not pass")
+		}
+	})
+
+	r, err := http.NewRequest(http.MethodGet, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	cols := []string{"id", "name", "available_amount", "cost", "seller_id"}
+
+	mock.ExpectQuery(`select .* from products where id=\?`).WithArgs("product-id").WillReturnRows(sqlmock.NewRows(cols).
+		AddRow("product-id", "name", 10, 5, "seller-id-1"))
+
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("productID", "product-id")
+	chiCtx.URLParams.Add("amount", "iuwer")
+
+	ctx := context.WithValue(r.Context(), chi.RouteCtxKey, chiCtx)
+
+	NewApp("", db).ProductCtx(next).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusOK, resp.StatusCode)
+	}
+}
+
+func TestProductCtxSuccessWitGoodAmount(t *testing.T) {
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p, ok := r.Context().Value(productContextKey).(*model.Product)
+		if !ok || p == nil {
+			t.Error("there should be a product in context")
+		} else {
+			if p.ID != "product-id" {
+				t.Errorf("wrong product in context. expected ID: %s, got: %s", "product-id", p.ID)
+			}
+		}
+
+		a, ok := r.Context().Value(amountValueContextKey).(*int)
+		if !ok || a == nil {
+			t.Error("amount should be available")
+		}
+	})
+
+	r, err := http.NewRequest(http.MethodGet, "/product", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	cols := []string{"id", "name", "available_amount", "cost", "seller_id"}
+
+	mock.ExpectQuery(`select .* from products where id=\?`).WithArgs("product-id").WillReturnRows(sqlmock.NewRows(cols).
+		AddRow("product-id", "name", 10, 5, "seller-id-1"))
+
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("productID", "product-id")
+	chiCtx.URLParams.Add("amount", "3")
+
+	ctx := context.WithValue(r.Context(), chi.RouteCtxKey, chiCtx)
+
+	NewApp("", db).ProductCtx(next).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("wrong status code. expected: %d, got: %d", http.StatusOK, resp.StatusCode)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
