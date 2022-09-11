@@ -74,3 +74,15 @@ func (a *app) UserDepositCoin(ctx context.Context, usr *model.User, coin int) er
 
 	return nil
 }
+
+func (a *app) Buy(ctx context.Context, user *model.User, prod *model.Product, amount int) error {
+	if amount > int(prod.AmountAvailable) {
+		return errors.New("no availability")
+	}
+
+	if user.Deposit < int64(amount)*prod.Cost {
+		return errors.New("not enough deposit")
+	}
+
+	return a.dbBuy(ctx, user.ID, prod.ID, amount, int64(amount)*prod.Cost)
+}

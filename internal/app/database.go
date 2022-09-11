@@ -298,3 +298,41 @@ func (a *app) dbUserUpdateDeposit(ctx context.Context, userID string, newDeposit
 	return
 
 }
+
+// dbBuy implements the buy logic at the database level
+// this would be better implemented in a stored procedure
+func (a *app) dbBuy(ctx context.Context, userID, prodID string, amount int, totalCost int64) (err error) {
+
+	if a.Db == nil {
+		return errors.New("no database configured")
+	}
+
+	tx, err := a.Db.BeginTx(ctx, nil)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	if _, err = tx.ExecContext(ctx, `update products set available_amount = available_amount - ? where id=?`, amount, prodID); err != nil {
+		return
+	}
+
+	if _, err = tx.ExecContext(ctx, `update users set deposit = deposit - ? where id=?`, totalCost, userID); err != nil {
+		return
+	}
+
+	// TODO: extra checks if resting available_amount < 0 or deposit < 0
+	// the way these situations are handled in a concurrent environment
+	// depend a lot on the database as well (how transactions work, isolation, snapshots, etc)
+
+	return
+
+}

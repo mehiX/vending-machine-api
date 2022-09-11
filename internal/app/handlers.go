@@ -174,7 +174,50 @@ func (a *app) handleDeposit() http.HandlerFunc {
 }
 
 func (a *app) handleBuy() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {}
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
+
+		user, ok := ctx.Value(userContextKey).(*model.User)
+		if !ok || !user.IsBuyer() {
+			http.Error(w, "not a buyer", http.StatusUnauthorized)
+			return
+		}
+
+		prod, ok := ctx.Value(productContextKey).(*model.Product)
+		if !ok {
+			http.Error(w, "product not found", http.StatusNotFound)
+			return
+		}
+
+		amount, ok := ctx.Value(amountValueContextKey).(*int)
+		if !ok {
+			http.Error(w, "amount needs to be a positive number", http.StatusBadRequest)
+			return
+		}
+
+		seller, ok := ctx.Value(sellerContextKey).(*model.User)
+		if !ok {
+			http.Error(w, "seller data not found", http.StatusNotFound)
+			return
+		}
+
+		if err := a.Buy(r.Context(), user, prod, *amount); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		resp := buyResponse{
+			Product: prodNoAvailability{
+				Name:       prod.Name,
+				Cost:       prod.Cost,
+				SellerName: seller.Username,
+			},
+			Amount: *amount,
+		}
+
+		returnAsJSON(r.Context(), w, resp)
+	}
 }
 
 func (a *app) returnUserAsJson(ctx context.Context, w http.ResponseWriter, userID string) {
@@ -231,4 +274,15 @@ type addUserRequest struct {
 type loginRequest struct {
 	Username string
 	Password string
+}
+
+type buyResponse struct {
+	Product prodNoAvailability
+	Amount  int
+}
+
+type prodNoAvailability struct {
+	Name       string
+	Cost       int64
+	SellerName string
 }

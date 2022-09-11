@@ -25,6 +25,7 @@ var (
 	productContextKey     = &contextKey{"product"} // holds a reference to the current product (based on the productID in path)
 	coinValueContextKey   = &contextKey{"coinValue"}
 	amountValueContextKey = &contextKey{"amountProduct"}
+	sellerContextKey      = &contextKey{"seller"}
 )
 
 func (a *app) SetupRoutes() {
@@ -164,10 +165,17 @@ func (a *app) ProductCtx(next http.Handler) http.Handler {
 		productID := chi.URLParam(r, "productID")
 		product, err := a.dbFindProductByID(r.Context(), productID)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			http.Error(w, "product not found", http.StatusNotFound)
 			return
 		}
 		ctx := context.WithValue(r.Context(), productContextKey, product)
+
+		usr, err := a.FindUserByID(r.Context(), product.SellerID)
+		if err != nil {
+			http.Error(w, "seller not found", http.StatusNotFound)
+			return
+		}
+		ctx = context.WithValue(ctx, sellerContextKey, usr)
 
 		amount, err := strconv.Atoi(chi.URLParam(r, "amount"))
 		if err != nil {

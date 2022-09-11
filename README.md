@@ -7,7 +7,7 @@
 
 ## Requirements
 
-- Go >= 1.19
+- Go >= 1.18
 
 ## Setup and dependencies
 
