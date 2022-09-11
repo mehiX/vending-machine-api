@@ -220,13 +220,18 @@ func (a *App) handleBuy() http.HandlerFunc {
 			return
 		}
 
+		totalSpent := int64(*amount) * prod.Cost
+		change := getChange(user.Deposit - totalSpent)
+
 		resp := buyResponse{
-			Product: prodNoAvailability{
+			Product: prodBuyerInfo{
 				Name:       prod.Name,
 				Cost:       prod.Cost,
 				SellerName: seller.Username,
 			},
-			Amount: *amount,
+			Amount:     *amount,
+			TotalSpent: totalSpent,
+			Change:     change,
 		}
 
 		returnAsJSON(r.Context(), w, resp)
@@ -290,11 +295,13 @@ type loginRequest struct {
 }
 
 type buyResponse struct {
-	Product prodNoAvailability
-	Amount  int
+	Product    prodBuyerInfo
+	Amount     int
+	TotalSpent int64
+	Change     [5]int64
 }
 
-type prodNoAvailability struct {
+type prodBuyerInfo struct {
 	Name       string
 	Cost       int64
 	SellerName string

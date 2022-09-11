@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -503,6 +504,7 @@ func TestOnlyBuyersCanBuy(t *testing.T) {
 		amount     int
 		seller     *model.User
 		statusCode int
+		response   buyResponse
 	}
 
 	scenarios := []scenario{
@@ -515,7 +517,24 @@ func TestOnlyBuyersCanBuy(t *testing.T) {
 		{name: "no availability", user: &model.User{Role: model.ROLE_BUYER}, product: &model.Product{ID: "productid", SellerID: "seller-id", AmountAvailable: 3}, amount: 5, seller: &model.User{ID: "seller-id", Role: model.ROLE_SELLER}, statusCode: http.StatusBadRequest},
 		{name: "not enough deposit", user: &model.User{Role: model.ROLE_BUYER, Deposit: 15}, product: &model.Product{ID: "productid", SellerID: "seller-id", AmountAvailable: 10, Cost: 5}, amount: 5, seller: &model.User{ID: "seller-id", Role: model.ROLE_SELLER}, statusCode: http.StatusBadRequest},
 		{name: "no database", user: &model.User{Role: model.ROLE_BUYER, Deposit: 30}, product: &model.Product{ID: "productid", SellerID: "seller-id", AmountAvailable: 10, Cost: 5}, amount: 5, seller: &model.User{ID: "seller-id", Role: model.ROLE_SELLER}, statusCode: http.StatusBadRequest},
-		{name: "all good", user: &model.User{Role: model.ROLE_BUYER, Deposit: 30}, product: &model.Product{ID: "productid", SellerID: "seller-id", AmountAvailable: 10, Cost: 5}, amount: 5, seller: &model.User{ID: "seller-id", Role: model.ROLE_SELLER}, statusCode: http.StatusOK},
+		{
+			name:       "all good",
+			user:       &model.User{Role: model.ROLE_BUYER, Deposit: 30},
+			product:    &model.Product{ID: "productid", Name: "product name", SellerID: "seller-id", AmountAvailable: 10, Cost: 5},
+			amount:     5,
+			seller:     &model.User{ID: "seller-id", Username: "best-seller", Role: model.ROLE_SELLER},
+			statusCode: http.StatusOK,
+			response: buyResponse{
+				Amount:     5,
+				TotalSpent: 25,
+				Change:     [5]int64{1, 0, 0, 0, 0},
+				Product: prodBuyerInfo{
+					Name:       "product name",
+					Cost:       5,
+					SellerName: "best-seller",
+				},
+			},
+		},
 	}
 
 	for _, s := range scenarios {
@@ -540,6 +559,7 @@ func TestOnlyBuyersCanBuy(t *testing.T) {
 			if s.name != "all good" {
 				NewApp("", nil).handleBuy().ServeHTTP(w, r.WithContext(ctx))
 			} else {
+				// the happy scenario
 				db, mock, err := sqlmock.New()
 				if err != nil {
 					t.Fatal(err)
@@ -557,6 +577,27 @@ func TestOnlyBuyersCanBuy(t *testing.T) {
 					t.Error(err)
 				}
 
+				resp := w.Result()
+				defer resp.Body.Close()
+
+				var data buyResponse
+				if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+					t.Fatal(err)
+				}
+
+				// validate returned data
+				if data.Amount != s.response.Amount {
+					t.Errorf("wrong amount. expected: %d, got: %d", s.response.Amount, data.Amount)
+				}
+				if data.TotalSpent != s.response.TotalSpent {
+					t.Errorf("wrong total spent. expected: %d, got: %d", s.response.TotalSpent, data.TotalSpent)
+				}
+				if data.Change != s.response.Change {
+					t.Errorf("wrong change. expected: %v, got: %v", s.response.Change, data.Change)
+				}
+				if !reflect.DeepEqual(data.Product, s.response.Product) {
+					t.Errorf("wrong product info. expected: %v, got: %v", s.response.Product, data.Product)
+				}
 			}
 
 			if w.Result().StatusCode != s.statusCode {

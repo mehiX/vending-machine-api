@@ -86,3 +86,20 @@ func (a *App) Buy(ctx context.Context, user *model.User, prod *model.Product, am
 
 	return a.dbBuy(ctx, user.ID, prod.ID, amount, int64(amount)*prod.Cost)
 }
+
+// getChange splits the amount `n` in coins of 5, 10, 20, 50, 100
+// It assumes that the vending machine has all types of coins available at any time, in sufficient amounts
+// The amount `n` should be a multiple of 5.
+func getChange(n int64) [5]int64 {
+
+	values := []int64{5, 10, 20, 50, 100}
+	coins := [5]int64{}
+
+	remaining := n
+	for i := 4; i >= 0; i-- {
+		coins[i] = remaining / values[i]
+		remaining -= coins[i] * values[i]
+	}
+
+	return coins
+}

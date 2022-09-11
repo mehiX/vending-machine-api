@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -115,5 +116,39 @@ func TestUserDepositCoinFailWrongCoin(t *testing.T) {
 		if err.Error() != "coin value not allowed" {
 			t.Fatalf("wrong error message. Expected: %s, got: %s", "coin value not allowed", err.Error())
 		}
+	}
+}
+
+func TestGetChange(t *testing.T) {
+
+	type scenario struct {
+		n      int64
+		change [5]int64
+	}
+
+	scenarios := []scenario{
+		{5, [5]int64{1, 0, 0, 0, 0}},
+		{10, [5]int64{0, 1, 0, 0, 0}},
+		{15, [5]int64{1, 1, 0, 0, 0}},
+		{20, [5]int64{0, 0, 1, 0, 0}},
+		{25, [5]int64{1, 0, 1, 0, 0}},
+		{30, [5]int64{0, 1, 1, 0, 0}},
+		{35, [5]int64{1, 1, 1, 0, 0}},
+		{40, [5]int64{0, 0, 2, 0, 0}},
+		{45, [5]int64{1, 0, 2, 0, 0}},
+		{50, [5]int64{0, 0, 0, 1, 0}},
+		{100, [5]int64{0, 0, 0, 0, 1}},
+		{105, [5]int64{1, 0, 0, 0, 1}},
+		{385, [5]int64{1, 1, 1, 1, 3}},
+	}
+
+	for _, s := range scenarios {
+		t.Run(fmt.Sprintf("%d", s.n), func(t *testing.T) {
+			t.Parallel()
+			res := getChange(s.n)
+			if res != s.change {
+				t.Errorf("wrong change. expected: %v, got: %v", s.change, res)
+			}
+		})
 	}
 }
