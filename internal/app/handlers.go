@@ -35,14 +35,9 @@ func (a *app) handleShowCurrentUser() http.HandlerFunc {
 			Deposit:  usr.Deposit,
 		}
 
-		w.Header().Set("Content-type", "application/json")
-		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			fmt.Println(err)
-			http.Error(w, "error encoding response", http.StatusInternalServerError)
-			return
-		}
-	}
+		returnAsJSON(r.Context(), w, resp)
 
+	}
 }
 
 // @Summary 	Add a new user

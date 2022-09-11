@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/mehiX/vending-machine-api/internal/app/model"
@@ -644,5 +645,88 @@ func TestRouteProductDetailsSuccess(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestBuyerCtxFailNoUser(t *testing.T) {
+	r, err := http.NewRequest(http.MethodGet, "/buy", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
+	NewApp("", nil).BuyerCtx(next).ServeHTTP(w, r)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("wrong status code")
+	}
+
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := strings.TrimSpace(string(b))
+	if msg != "authentication error" {
+		t.Fatalf("wrong error message. expected: %s, got: %s", "authentication error", msg)
+	}
+}
+
+func TestBuyerCtxSuccessNoCoin(t *testing.T) {
+	r, err := http.NewRequest(http.MethodGet, "/buy", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		coin, ok := r.Context().Value(coinValueContextKey).(*int)
+		if ok || coin != nil {
+			t.Errorf("there should be no coin value set")
+		}
+	})
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_BUYER})
+	NewApp("", nil).BuyerCtx(next).ServeHTTP(w, r.WithContext(ctx))
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("the handler should pass the request")
+	}
+}
+
+func TestBuyerCtxSuccessWithCoin(t *testing.T) {
+	r, err := http.NewRequest(http.MethodGet, "/buy", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		coin, ok := r.Context().Value(coinValueContextKey).(*int)
+		if !ok || coin == nil {
+			t.Errorf("there should be a coin value set")
+		}
+
+		if *coin != 5 {
+			t.Errorf("wrong coin value. expected: %d, got: %d", 5, *coin)
+		}
+	})
+
+	ctx := context.WithValue(r.Context(), userContextKey, &model.User{Role: model.ROLE_BUYER})
+
+	// Make Chi believe there is a URL parameter set
+	routerCtx := chi.NewRouteContext()
+	routerCtx.URLParams.Add("coinValue", "5")
+	ctxWithChi := context.WithValue(ctx, chi.RouteCtxKey, routerCtx)
+
+	NewApp("", nil).BuyerCtx(next).ServeHTTP(w, r.WithContext(ctxWithChi))
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("the handler should pass the request")
 	}
 }

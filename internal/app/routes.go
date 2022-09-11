@@ -135,6 +135,7 @@ func (a *app) SellerCtx(next http.Handler) http.Handler {
 
 // BuyerCtx only allows buyer accounts to access successive endpoints
 // Requires a "user" object in current request context
+// If there is a coinValue on the request path, it will set it as a context vlaue. No validation is performed at this stage
 func (a *app) BuyerCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		usr, ok := r.Context().Value(userContextKey).(*model.User)

@@ -107,3 +107,13 @@ func TestCreateUserFailOnNoDatabase(t *testing.T) {
 		t.Error("expect to return error if no database defined")
 	}
 }
+
+func TestUserDepositCoinFailWrongCoin(t *testing.T) {
+	if err := NewApp("", nil).UserDepositCoin(context.Background(), nil, 40); err == nil {
+		t.Fatal("should not accept wrong coin values")
+	} else {
+		if err.Error() != "coin value not allowed" {
+			t.Fatalf("wrong error message. Expected: %s, got: %s", "coin value not allowed", err.Error())
+		}
+	}
+}
