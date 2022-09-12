@@ -23,14 +23,16 @@ func init() {
 
 	flag.Parse()
 
-	if err := godotenv.Load(envFile); err != nil {
-		fmt.Printf("ENV not loaded from '%s'. Error: %s\n", envFile, err.Error())
+	if envFile != "" {
+		if err := godotenv.Load(envFile); err != nil {
+			fmt.Printf("ENV not loaded from '%s'. Error: %s\n", envFile, err.Error())
+		}
 	}
 }
 
 // @title  Vending Machine API
 // @description API for a vending machine, allowing users with a “seller” role to add, update or remove products, while users with a “buyer” role can deposit coins into the machine and make purchases
-// @version 1.0
+// @version 1.0.2
 
 // @contact.name Mihai O.
 // @contact.email mihai@devops-experts.me

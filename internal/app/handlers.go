@@ -185,7 +185,7 @@ func (a *App) handleDeposit() http.HandlerFunc {
 // @Failure		400 {string} string "bad request"
 // @Failure		401 {string} string "not authorized"
 // @Failure		404 {string} string "product not found, seller not found"
-// @Router 		/buy/product/{productID}/amount/{amount} [post]
+// @Router 		/buy/product/{productID}/amount/{amount} [get]
 func (a *App) handleBuy() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -261,7 +261,7 @@ func returnAsJSON(ctx context.Context, w http.ResponseWriter, data any) {
 
 func (a *App) getEncTokenString(userID, username string) (tokenString string, err error) {
 	t := jwt.New()
-	t.Set(jwt.ExpirationKey, time.Now().Add(10*time.Minute))
+	t.Set(jwt.ExpirationKey, time.Now().Add(30*time.Minute))
 	t.Set(jwt.NotBeforeKey, time.Now())
 	t.Set(jwtUserIdKey, userID)
 	t.Set(jwtUsernameKey, username)

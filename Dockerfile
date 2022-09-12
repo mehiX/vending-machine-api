@@ -1,7 +1,7 @@
 #build stage
 FROM golang:alpine AS builder
 
-ARG VERSION=1.0
+ARG VERSION=1.0.2
 
 RUN apk add --no-cache gcc libc-dev git
 WORKDIR /go/src/app
@@ -25,7 +25,7 @@ COPY --from=builder --chown=app /go/bin/healthcheck /healthcheck
 USER app
 
 ENTRYPOINT ["/app"] 
-CMD ["-l", ":80"]
+CMD ["-e", "''", "-l", ":80"]
 
 LABEL Name=VendinMachineAPI Version=${VERSION}
 
